@@ -10,6 +10,9 @@
   "dependencies": {
     "axios": "^1.4.0",
     "core-js": "^3.8.3",
+    "three": "^0.160.0",
+    "@readyplayerme/visage": "^4.8.1",
+    "@types/three": "^0.160.0",
     "vue": "^3.2.13",
     "vue-router": "^4.0.3",
     "vuex": "^4.0.0"

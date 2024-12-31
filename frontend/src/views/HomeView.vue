@@ -1,19 +1,24 @@
+//frontend/src/views/HomeView.vue
 <template>
   <div class="home">
-    <ProfileSlider @section-change="handleSectionChange" />
-    <InteractiveAvatar :current-section="currentSection" />
+    <div class="avatar-sidebar">
+      <ThreeDAvatar :current-section="currentSection" />
+    </div>
+    <div class="main-content">
+      <ProfileSlider @section-change="handleSectionChange" />
+    </div>
   </div>
 </template>
 
 <script>
 import ProfileSlider from '@/components/ProfileSlider.vue'
-import InteractiveAvatar from '@/components/InteractiveAvatar.vue'
+import ThreeDAvatar from '@/components/ThreeDAvatar.vue'
 
 export default {
   name: 'HomeView',
   components: {
     ProfileSlider,
-    InteractiveAvatar
+    ThreeDAvatar
   },
   data() {
     return {
@@ -28,9 +33,25 @@ export default {
 }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .home {
-  min-height: 100vh;
-  position: relative;
+  display: flex;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.avatar-sidebar {
+  width: 250px;  /* Reduced from 350px */
+  height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+}
+
+.main-content {
+  flex: 1;
+  margin-left: 250px;  /* Matches sidebar width */
+  height: 100vh;
 }
 </style>
