@@ -132,11 +132,12 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 
 export default {
   name: 'ProfileSlider',
-  setup() {
+  emits: ['section-change'],
+  setup(props, { emit }) {
     const profileImage = ref('/images/profile.png')
     const name = ref('Imad Zaoug')
     const title = ref('Data scientist & Full stack')
@@ -146,55 +147,85 @@ export default {
     const personalInfo = ref({
       'Location': 'Rabat, Morocco',
       'Email': 'imad.zaoug@centrale-casablanca.ma',
-      'Specialty': 'Your Specialty',
-      'Experience': 'X Years',
-      'Languages': 'Arabe, French, English'
+      'Specialty': 'Data Science | Web Development',
+      'Experience': '2+ Years',
+      'Languages': 'Arabic, French, English'
     })
 
     const projects = ref([
       {
-        title: 'Project 1',
-        type: 'School Project',
-        description: 'Description of the project...',
-        technologies: ['Tech1', 'Tech2', 'Tech3']
+        title: 'AI-Powered Healthcare Analysis',
+        type: 'Research Project',
+        description: 'Developed a machine learning model for early disease detection using patient data',
+        technologies: ['Python', 'TensorFlow', 'Scikit-learn', 'Pandas']
       },
-      // Add more projects
+      {
+        title: 'E-commerce Platform',
+        type: 'Full Stack Project',
+        description: 'Built a complete e-commerce solution with advanced features',
+        technologies: ['Vue.js', 'Node.js', 'MongoDB', 'Express']
+      }
     ])
 
     const experience = ref([
       {
-        position: 'Position Title',
-        company: 'Company Name',
-        period: 'Jan 2023 - Present',
+        position: 'Data Science Intern',
+        company: 'Tech Solutions Inc.',
+        period: 'Jun 2023 - Dec 2023',
         responsibilities: [
-          'Responsibility 1',
-          'Responsibility 2'
+          'Developed predictive models for customer behavior analysis',
+          'Implemented data pipelines using Python and SQL',
+          'Created visualization dashboards using PowerBI'
         ]
       },
-      // Add more experiences
+      {
+        position: 'Full Stack Developer',
+        company: 'Web Innovations',
+        period: 'Jan 2023 - May 2023',
+        responsibilities: [
+          'Developed responsive web applications using Vue.js',
+          'Implemented RESTful APIs using Node.js',
+          'Managed database architecture and optimization'
+        ]
+      }
     ])
 
     const technicalSkills = ref({
-      'Programming': ['JavaScript', 'Python', 'Java'],
-      'Frontend': ['Vue.js', 'React', 'HTML/CSS'],
-      'Backend': ['Node.js', 'Flask', 'Django'],
-      'Database': ['MongoDB', 'PostgreSQL']
+      'Programming': ['Python', 'JavaScript', 'Java', 'R'],
+      'Frontend': ['Vue.js', 'React', 'HTML/CSS', 'Tailwind'],
+      'Backend': ['Node.js', 'Flask', 'Django', 'Express'],
+      'Database': ['MongoDB', 'PostgreSQL', 'MySQL'],
+      'Data Science': ['TensorFlow', 'Scikit-learn', 'Pandas', 'NumPy']
     })
 
     const softSkills = ref([
       {
-        name: 'Communication',
-        description: 'Excellent verbal and written communication skills...'
+        name: 'Problem Solving',
+        description: 'Strong analytical and creative approach to solving complex problems'
       },
-      // Add more soft skills
+      {
+        name: 'Communication',
+        description: 'Excellent verbal and written communication skills in multiple languages'
+      },
+      {
+        name: 'Leadership',
+        description: 'Experience leading technical teams and mentoring junior developers'
+      }
     ])
 
     const interests = ref([
       {
-        name: 'Technology',
-        description: 'Passionate about emerging technologies...'
+        name: 'Artificial Intelligence',
+        description: 'Passionate about AI advancement and its ethical implications'
       },
-      // Add more interests
+      {
+        name: 'Open Source',
+        description: 'Active contributor to open source projects and community initiatives'
+      },
+      {
+        name: 'Tech Innovation',
+        description: 'Following and experimenting with emerging technologies'
+      }
     ])
 
     const slidePosition = computed(() => currentSlide.value * 100)
@@ -202,14 +233,27 @@ export default {
     const nextSlide = () => {
       if (currentSlide.value < totalSlides.value - 1) {
         currentSlide.value++
+        emit('section-change', currentSlide.value)
       }
     }
 
     const prevSlide = () => {
       if (currentSlide.value > 0) {
         currentSlide.value--
+        emit('section-change', currentSlide.value)
       }
     }
+
+    // Add keyboard navigation
+    onMounted(() => {
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowUp') {
+          prevSlide()
+        } else if (e.key === 'ArrowDown') {
+          nextSlide()
+        }
+      })
+    })
 
     return {
       profileImage,
@@ -232,6 +276,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+/* Your existing styles remain the same */
 .profile-slider {
   width: 100%;
   height: 100vh;
@@ -286,6 +331,11 @@ export default {
   padding: 1.5rem;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: transform 0.2s ease;
+
+  &:hover {
+    transform: translateY(-5px);
+  }
 }
 
 .tech-tag, .skill-tag {
@@ -295,6 +345,12 @@ export default {
   border-radius: 15px;
   margin: 0.25rem;
   font-size: 0.9rem;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background: #42b883;
+    color: white;
+  }
 }
 
 .timeline {
@@ -302,6 +358,11 @@ export default {
     margin-bottom: 2rem;
     padding-left: 1.5rem;
     border-left: 2px solid #42b883;
+    transition: border-left-width 0.2s ease;
+
+    &:hover {
+      border-left-width: 4px;
+    }
   }
 }
 
@@ -344,6 +405,11 @@ export default {
     align-items: center;
     justify-content: center;
     font-size: 1.2rem;
+    transition: transform 0.2s ease;
+
+    &:hover:not(:disabled) {
+      transform: scale(1.1);
+    }
 
     &:disabled {
       background: #ccc;
@@ -369,6 +435,11 @@ h3 {
 
   li {
     margin-bottom: 0.5rem;
+    transition: color 0.2s ease;
+
+    &:hover {
+      color: #42b883;
+    }
   }
 }
 
