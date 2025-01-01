@@ -337,7 +337,7 @@ export default {
 
       camera = new THREE.PerspectiveCamera(
         35,
-        350 / 600,
+        300 / 500,
         0.1,
         1000
       )
@@ -349,7 +349,7 @@ export default {
         antialias: true,
         alpha: true
       })
-      renderer.setSize(350, 600)
+      renderer.setSize(300, 500)
       renderer.setPixelRatio(window.devicePixelRatio)
       renderer.setClearColor(0x000000, 0)
       renderer.shadowMap.enabled = true
@@ -471,8 +471,8 @@ export default {
 <style lang="scss" scoped>
 .avatar-container {
   position: fixed;
-  width: 350px;
-  height: 600px;
+  width: 300px;
+  height: 500px;
   z-index: 1000;
   transition: all 0.5s ease-in-out;
 

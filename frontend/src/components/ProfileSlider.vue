@@ -1,4 +1,4 @@
-//frontend/src/components/ProfileSlider.vue
+// ProfileSlider.vue
 <template>
   <div class="profile-slider">
     <div class="slider-container" 
@@ -68,22 +68,18 @@
       </section>
 
       <!-- Technical Skills Section -->
-      <section class="slide">
+      <section class="slide skills-section">
         <div class="skills">
           <h2>Technical Skills</h2>
-          <div class="skills-grid">
-            <div v-for="(skills, category) in technicalSkills" 
-                 :key="category" 
-                 class="skill-category">
-              <h3>{{ category }}</h3>
-              <div class="skill-tags">
-                <span v-for="skill in skills" 
-                      :key="skill" 
-                      class="skill-tag">
-                  {{ skill }}
-                </span>
-              </div>
-            </div>
+          <div class="skills-container" :class="{ 'fullscreen-container': isFullscreen }">
+            <SkillTree 
+              :initial-skills="technicalSkills"
+              :available-points="availablePoints"
+              :max-points="maxPoints"
+              @unlock-skill="handleSkillUnlock"
+              @fullscreen-change="handleFullscreenChange"
+              :is-fullscreen="isFullscreen"
+            />
           </div>
         </div>
       </section>
@@ -132,13 +128,22 @@
   </div>
 </template>
 
+//frontend/src/components/ProfileSlider.vue script section
 <script>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import SkillTree from './SkillTree.vue'
 
 export default {
   name: 'ProfileSlider',
+  components: {
+    SkillTree
+  },
   props: {
     disabled: {
+      type: Boolean,
+      default: false
+    },
+    isFullscreen: {
       type: Boolean,
       default: false
     }
@@ -152,7 +157,9 @@ export default {
     const currentSlide = ref(0)
     const totalSlides = ref(7)
     const isAnimating = ref(false)
+    const isSkillTreeFullscreen = ref(false)
 
+    // Base information
     const personalInfo = ref({
       'Location': 'Rabat, Morocco',
       'Email': 'imad.zaoug@centrale-casablanca.ma',
@@ -161,6 +168,7 @@ export default {
       'Languages': 'Arabic, French, English'
     })
 
+    // Projects section
     const projects = ref([
       {
         title: 'AI-Powered Healthcare Analysis',
@@ -176,6 +184,7 @@ export default {
       }
     ])
 
+    // Experience section
     const experience = ref([
       {
         position: 'Data Science Intern',
@@ -199,14 +208,118 @@ export default {
       }
     ])
 
-    const technicalSkills = ref({
-      'Programming': ['Python', 'JavaScript', 'Java', 'R'],
-      'Frontend': ['Vue.js', 'React', 'HTML/CSS', 'Tailwind'],
-      'Backend': ['Node.js', 'Flask', 'Django', 'Express'],
-      'Database': ['MongoDB', 'PostgreSQL', 'MySQL'],
-      'Data Science': ['TensorFlow', 'Scikit-learn', 'Pandas', 'NumPy']
-    })
+    // Skills tree data and state
+    const availablePoints = ref(5)
+    const maxPoints = ref(20)
+    
+    const technicalSkills = ref([
+      // Core Skills
+      {
+        id: 'core_programming',
+        name: 'Programming',
+        description: 'Core programming fundamentals',
+        icon: '💻',
+        position: { x: 600, y: 400 },
+        unlocked: true,
+        cost: 0
+      },
+      // Data Science Branch
+      {
+        id: 'python',
+        name: 'Python',
+        description: 'Python programming & data analysis',
+        icon: '🐍',
+        position: { x: 450, y: 300 },
+        dependencies: ['core_programming'],
+        unlocked: false,
+        cost: 1
+      },
+      {
+        id: 'machine_learning',
+        name: 'Machine Learning',
+        description: 'ML algorithms & model training',
+        icon: '🤖',
+        position: { x: 350, y: 200 },
+        dependencies: ['python'],
+        unlocked: false,
+        cost: 2
+      },
+      {
+        id: 'deep_learning',
+        name: 'Deep Learning',
+        description: 'Neural networks & deep learning',
+        icon: '🧠',
+        position: { x: 250, y: 150 },
+        dependencies: ['machine_learning'],
+        unlocked: false,
+        cost: 2
+      },
+      // Web Development Branch
+      {
+        id: 'javascript',
+        name: 'JavaScript',
+        description: 'JavaScript & modern web development',
+        icon: '🌐',
+        position: { x: 750, y: 300 },
+        dependencies: ['core_programming'],
+        unlocked: false,
+        cost: 1
+      },
+      {
+        id: 'frontend',
+        name: 'Frontend',
+        description: 'Frontend frameworks & UI development',
+        icon: '🎨',
+        position: { x: 850, y: 200 },
+        dependencies: ['javascript'],
+        unlocked: false,
+        cost: 2
+      },
+      {
+        id: 'backend',
+        name: 'Backend',
+        description: 'Backend development & APIs',
+        icon: '⚙️',
+        position: { x: 950, y: 150 },
+        dependencies: ['javascript'],
+        unlocked: false,
+        cost: 2
+      },
+      // Database Branch
+      {
+        id: 'sql',
+        name: 'SQL',
+        description: 'Relational databases & SQL',
+        icon: '📊',
+        position: { x: 500, y: 500 },
+        dependencies: ['core_programming'],
+        unlocked: false,
+        cost: 1
+      },
+      {
+        id: 'nosql',
+        name: 'NoSQL',
+        description: 'NoSQL databases & data modeling',
+        icon: '🗄️',
+        position: { x: 700, y: 500 },
+        dependencies: ['core_programming'],
+        unlocked: false,
+        cost: 1
+      },
+      // DevOps Branch
+      {
+        id: 'devops',
+        name: 'DevOps',
+        description: 'CI/CD & deployment',
+        icon: '🔄',
+        position: { x: 600, y: 600 },
+        dependencies: ['sql', 'nosql'],
+        unlocked: false,
+        cost: 3
+      }
+    ])
 
+    // Soft Skills section
     const softSkills = ref([
       {
         name: 'Problem Solving',
@@ -222,6 +335,7 @@ export default {
       }
     ])
 
+    // Interests section
     const interests = ref([
       {
         name: 'Artificial Intelligence',
@@ -237,8 +351,10 @@ export default {
       }
     ])
 
+    // Computed properties
     const slidePosition = computed(() => currentSlide.value * 100)
 
+    // Animation handling
     const getScrollAnimation = (direction, currentSection) => {
       if (direction === 'down') {
         if (currentSection === 0) return 'jump'
@@ -252,13 +368,13 @@ export default {
       }
     }
 
+    // Navigation methods
     const handleNextSlide = async () => {
       if (props.disabled || isAnimating.value || currentSlide.value >= totalSlides.value - 1) return
       
       isAnimating.value = true
       const animation = getScrollAnimation('down', currentSlide.value)
       
-      // Emit animation start event
       emit('animation-start', {
         animation,
         direction: 'down',
@@ -266,14 +382,11 @@ export default {
         toSection: currentSlide.value + 1
       })
 
-      // Wait for animation and transition
-      await new Promise(resolve => setTimeout(resolve, 1500))
+      await new Promise(resolve => setTimeout(resolve, 500))
       
-      // Update slide
       currentSlide.value++
       emit('section-change', currentSlide.value)
       
-      // Reset animation state
       isAnimating.value = false
       emit('animation-complete')
     }
@@ -284,7 +397,6 @@ export default {
       isAnimating.value = true
       const animation = getScrollAnimation('up', currentSlide.value)
       
-      // Emit animation start event
       emit('animation-start', {
         animation,
         direction: 'up',
@@ -292,29 +404,47 @@ export default {
         toSection: currentSlide.value - 1
       })
 
-      // Wait for animation and transition
-      await new Promise(resolve => setTimeout(resolve, 1500))
+      await new Promise(resolve => setTimeout(resolve, 500))
       
-      // Update slide
       currentSlide.value--
       emit('section-change', currentSlide.value)
       
-      // Reset animation state
       isAnimating.value = false
       emit('animation-complete')
     }
 
-    // Add keyboard navigation
+    // Skills tree methods
+    const handleSkillUnlock = (skillId) => {
+      const skill = technicalSkills.value.find(s => s.id === skillId)
+      if (skill && !skill.unlocked && availablePoints.value >= skill.cost) {
+        skill.unlocked = true
+        availablePoints.value -= skill.cost
+      }
+    }
+
+    const handleFullscreenChange = (isFullscreen) => {
+      isSkillTreeFullscreen.value = isFullscreen
+      emit('fullscreen-change', isFullscreen)
+    }
+
+    // Keyboard navigation
+    const handleKeydown = (e) => {
+      if (props.disabled || isSkillTreeFullscreen.value) return
+      
+      if (e.key === 'ArrowUp') {
+        handlePrevSlide()
+      } else if (e.key === 'ArrowDown') {
+        handleNextSlide()
+      }
+    }
+
+    // Lifecycle hooks
     onMounted(() => {
-      window.addEventListener('keydown', (e) => {
-        if (!props.disabled) {
-          if (e.key === 'ArrowUp') {
-            handlePrevSlide()
-          } else if (e.key === 'ArrowDown') {
-            handleNextSlide()
-          }
-        }
-      })
+      window.addEventListener('keydown', handleKeydown)
+    })
+
+    onUnmounted(() => {
+      window.removeEventListener('keydown', handleKeydown)
     })
 
     return {
@@ -324,21 +454,38 @@ export default {
       currentSlide,
       totalSlides,
       isAnimating,
+      isSkillTreeFullscreen,
       personalInfo,
       projects,
       experience,
       technicalSkills,
+      availablePoints,
+      maxPoints,
       softSkills,
       interests,
       slidePosition,
       handleNextSlide,
-      handlePrevSlide
+      handlePrevSlide,
+      handleSkillUnlock,
+      handleFullscreenChange
     }
   }
 }
 </script>
 
+//The complete style section
 <style lang="scss" scoped>
+// Variables
+:root {
+  --fullscreen-z-index: 9999;
+}
+
+.skills-section {
+  position: relative;
+  z-index: 1;
+}
+
+// Main container styles
 .profile-slider {
   width: 100%;
   height: 100vh;
@@ -347,6 +494,10 @@ export default {
   position: relative;
   display: flex;
   perspective: 1000px;
+
+  &:has(.skills-section.fullscreen) {
+    position: static;
+  }
 }
 
 .slider-container {
@@ -356,9 +507,10 @@ export default {
   will-change: transform;
 }
 
+// Slide styles
 .slide {
   height: 100vh;
-  padding: 2rem;
+  padding: 3rem;
   overflow-y: auto;
   backface-visibility: hidden;
   transition: opacity 0.5s ease-in-out;
@@ -366,14 +518,56 @@ export default {
 
   &::-webkit-scrollbar {
     width: 6px;
+    &-thumb {
+      background-color: rgba(0, 0, 0, 0.2);
+      border-radius: 3px;
+    }
   }
 
-  &::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.2);
-    border-radius: 3px;
+  &.skills-section {
+    overflow: hidden;
+    padding: 2rem;
+
+    &.fullscreen {
+      position: fixed !important;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: var(--fullscreen-z-index);
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+
+      .skills-container {
+        position: fixed;
+        inset: 0;
+        height: 100vh;
+        width: 100vw;
+        border-radius: 0;
+        margin: 0;
+        padding: 0;
+        z-index: var(--fullscreen-z-index);
+
+        &.fullscreen {
+          box-shadow: none;
+        }
+      }
+
+      .skills h2 {
+        position: fixed;
+        top: 2rem;
+        left: 2rem;
+        z-index: calc(var(--fullscreen-z-index) + 1);
+        margin: 0;
+        color: #fff;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      }
+    }
   }
 }
 
+// Profile image section
 .profile-image {
   text-align: center;
   padding-top: 20vh;
@@ -405,18 +599,26 @@ export default {
   }
 }
 
-.info-grid, .projects-grid, .skills-grid, .soft-skills-grid, .interests-grid {
+// Grid layouts
+.info-grid, 
+.projects-grid, 
+.skills-grid, 
+.soft-skills-grid, 
+.interests-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
-  margin-top: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-top: 2.5rem;
   will-change: transform;
   transition: transform 0.3s ease;
 }
 
-.project-card, .soft-skill-item, .interest-item {
+// Card styles
+.project-card, 
+.soft-skill-item, 
+.interest-item {
   background: var(--background-color);
-  padding: 1.5rem;
+  padding: 2rem;
   border-radius: 8px;
   box-shadow: 0 2px 4px var(--shadow-color);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -428,7 +630,50 @@ export default {
   }
 }
 
-.tech-tag, .skill-tag {
+// Skills section styles
+.skills {
+  .skills-container {
+    position: relative;
+    width: 100%;
+    height: calc(100vh - 200px);
+    overflow: hidden;
+    border-radius: 12px;
+    background: radial-gradient(circle at center, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.95) 100%);
+    box-shadow: 0 4px 20px var(--shadow-color);
+    transition: all 0.3s ease-in-out;
+    
+    &.fullscreen-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 9999;
+      border-radius: 0;
+      margin: 0;
+      padding: 0;
+    }
+  }
+
+  h2 {
+    margin-bottom: 2rem;
+    color: var(--text-color);
+    text-align: left;
+    
+    &::after {
+      content: '';
+      display: block;
+      width: 50px;
+      height: 3px;
+      background: var(--primary-color);
+      margin-top: 0.5rem;
+    }
+  }
+}
+
+// Tags
+.tech-tag, 
+.skill-tag {
   display: inline-block;
   background: var(--primary-color);
   color: var(--background-color);
@@ -444,6 +689,7 @@ export default {
   }
 }
 
+// Timeline
 .timeline {
   .experience-item {
     margin-bottom: 2rem;
@@ -455,9 +701,48 @@ export default {
       border-left-width: 4px;
       transform: translateX(5px);
     }
+
+    .exp-header {
+      margin-bottom: 1rem;
+
+      h3 {
+        margin-bottom: 0.5rem;
+        color: var(--primary-color);
+      }
+
+      .company {
+        display: block;
+        font-weight: 500;
+        margin-bottom: 0.25rem;
+      }
+
+      .date {
+        font-size: 0.9rem;
+        opacity: 0.8;
+      }
+    }
+
+    .responsibilities {
+      list-style-type: none;
+      padding-left: 0;
+
+      li {
+        position: relative;
+        padding-left: 1.5rem;
+        margin-bottom: 0.5rem;
+
+        &::before {
+          content: '▹';
+          position: absolute;
+          left: 0;
+          color: var(--primary-color);
+        }
+      }
+    }
   }
 }
 
+// Navigation
 .slider-nav {
   position: fixed;
   right: 2rem;
@@ -468,6 +753,10 @@ export default {
   align-items: center;
   gap: 1rem;
   z-index: 10;
+
+  &:has(~ .slide .skills-container.fullscreen-container) {
+    display: none;
+  }
 
   .progress-bar {
     width: 4px;
@@ -522,7 +811,7 @@ export default {
 h2 {
   color: var(--primary-color);
   margin-bottom: 2rem;
-  font-size: 2rem;
+  font-size: 2.5rem;
   position: relative;
   
   &:after {
@@ -542,11 +831,37 @@ h3 {
   margin-bottom: 1rem;
 }
 
+// Slide transitions
+.slide-enter-active,
+.slide-leave-active {
+  transition: all 0.8s ease-in-out;
+}
+
+.slide-enter-from {
+  transform: translateY(100%) rotateZ(5deg);
+  opacity: 0;
+}
+
+.slide-leave-to {
+  transform: translateY(-100%) rotateZ(-5deg);
+  opacity: 0;
+}
+
 // Responsive styles
 @media (max-width: 768px) {
+  .slide.skills-section.fullscreen {
+    padding: 0;
+    
+    .skills h2 {
+      top: 1rem;
+      left: 1rem;
+      font-size: 1.8rem;
+    }
+  }
+
   .slider-nav {
     right: 1rem;
-
+    
     button {
       width: 36px;
       height: 36px;
@@ -560,6 +875,10 @@ h3 {
 
   .slide {
     padding: 1rem;
+
+    &.skills-section {
+      padding: 1rem;
+    }
   }
 
   .profile-image {
@@ -577,12 +896,25 @@ h3 {
     }
   }
 
-  .info-grid, .projects-grid, .skills-grid {
+  .info-grid, 
+  .projects-grid, 
+  .skills-grid {
     grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  h2 {
+    font-size: 2rem;
   }
 }
 
 @media (max-width: 480px) {
+  .slide.skills-section.fullscreen {
+    .skills h2 {
+      font-size: 1.5rem;
+    }
+  }
+
   .slider-nav {
     right: 0.5rem;
     
@@ -590,6 +922,10 @@ h3 {
       width: 32px;
       height: 32px;
     }
+  }
+
+  .slide {
+    padding: 0.8rem;
   }
 
   h2 {
@@ -610,31 +946,34 @@ h3 {
       font-size: 1.2rem;
     }
   }
+
+  .project-card, 
+  .soft-skill-item, 
+  .interest-item {
+    padding: 1.5rem;
+  }
 }
 
-// Animation classes
-.slide-enter-active,
-.slide-leave-active {
-  transition: all 0.8s ease-in-out;
-}
+// Print styles
+@media print {
+  .skills-section.fullscreen {
+    position: relative !important;
+    width: 100% !important;
+    height: auto !important;
+    
+    .skills-container {
+      position: relative !important;
+      height: auto !important;
+      min-height: 500px;
+    }
+  }
 
-.slide-enter-from {
-  transform: translateY(100%) rotateZ(5deg);
-  opacity: 0;
-}
-
-.slide-leave-to {
-  transform: translateY(-100%) rotateZ(-5deg);
-  opacity: 0;
-}
-
-// Add transition states
-.is-transitioning {
-  pointer-events: none;
-  user-select: none;
+  .slider-nav {
+    display: none;
+  }
 
   .slide {
-    transition: transform 0.8s ease-in-out, opacity 0.4s ease-in-out;
+    page-break-after: always;
   }
 }
 </style>
