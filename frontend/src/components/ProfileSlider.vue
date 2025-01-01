@@ -1,3 +1,4 @@
+//frontend/src/components/ProfileSlider.vue
 <template>
   <div class="profile-slider">
     <div class="slider-container" 
@@ -125,8 +126,8 @@
              :style="{ height: `${(currentSlide / (totalSlides - 1)) * 100}%` }">
         </div>
       </div>
-      <button @click="prevSlide" :disabled="currentSlide === 0">↑</button>
-      <button @click="nextSlide" :disabled="currentSlide === totalSlides - 1">↓</button>
+      <button @click="handlePrevSlide" :disabled="isAnimating || currentSlide === 0">↑</button>
+      <button @click="handleNextSlide" :disabled="isAnimating || currentSlide === totalSlides - 1">↓</button>
     </div>
   </div>
 </template>
@@ -136,13 +137,21 @@ import { ref, computed, onMounted } from 'vue'
 
 export default {
   name: 'ProfileSlider',
-  emits: ['section-change'],
+  props: {
+    disabled: {
+      type: Boolean,
+      default: false
+    }
+  },
+  emits: ['section-change', 'animation-start', 'animation-complete'],
+  
   setup(props, { emit }) {
     const profileImage = ref('/images/profile.png')
     const name = ref('Imad Zaoug')
     const title = ref('Data scientist & Full stack')
     const currentSlide = ref(0)
-    const totalSlides = ref(7) 
+    const totalSlides = ref(7)
+    const isAnimating = ref(false)
 
     const personalInfo = ref({
       'Location': 'Rabat, Morocco',
@@ -230,27 +239,80 @@ export default {
 
     const slidePosition = computed(() => currentSlide.value * 100)
 
-    const nextSlide = () => {
-      if (currentSlide.value < totalSlides.value - 1) {
-        currentSlide.value++
-        emit('section-change', currentSlide.value)
+    const getScrollAnimation = (direction, currentSection) => {
+      if (direction === 'down') {
+        if (currentSection === 0) return 'jump'
+        if (currentSection === 2) return 'RunLeft'
+        if (currentSection === 4) return 'charge'
+        return 'climbingDownWall'
+      } else {
+        if (currentSection === 1) return 'freehangClimb'
+        if ([3, 5].includes(currentSection)) return 'RunRight'
+        return 'climbing'
       }
     }
 
-    const prevSlide = () => {
-      if (currentSlide.value > 0) {
-        currentSlide.value--
-        emit('section-change', currentSlide.value)
-      }
+    const handleNextSlide = async () => {
+      if (props.disabled || isAnimating.value || currentSlide.value >= totalSlides.value - 1) return
+      
+      isAnimating.value = true
+      const animation = getScrollAnimation('down', currentSlide.value)
+      
+      // Emit animation start event
+      emit('animation-start', {
+        animation,
+        direction: 'down',
+        fromSection: currentSlide.value,
+        toSection: currentSlide.value + 1
+      })
+
+      // Wait for animation and transition
+      await new Promise(resolve => setTimeout(resolve, 1500))
+      
+      // Update slide
+      currentSlide.value++
+      emit('section-change', currentSlide.value)
+      
+      // Reset animation state
+      isAnimating.value = false
+      emit('animation-complete')
+    }
+
+    const handlePrevSlide = async () => {
+      if (props.disabled || isAnimating.value || currentSlide.value <= 0) return
+      
+      isAnimating.value = true
+      const animation = getScrollAnimation('up', currentSlide.value)
+      
+      // Emit animation start event
+      emit('animation-start', {
+        animation,
+        direction: 'up',
+        fromSection: currentSlide.value,
+        toSection: currentSlide.value - 1
+      })
+
+      // Wait for animation and transition
+      await new Promise(resolve => setTimeout(resolve, 1500))
+      
+      // Update slide
+      currentSlide.value--
+      emit('section-change', currentSlide.value)
+      
+      // Reset animation state
+      isAnimating.value = false
+      emit('animation-complete')
     }
 
     // Add keyboard navigation
     onMounted(() => {
       window.addEventListener('keydown', (e) => {
-        if (e.key === 'ArrowUp') {
-          prevSlide()
-        } else if (e.key === 'ArrowDown') {
-          nextSlide()
+        if (!props.disabled) {
+          if (e.key === 'ArrowUp') {
+            handlePrevSlide()
+          } else if (e.key === 'ArrowDown') {
+            handleNextSlide()
+          }
         }
       })
     })
@@ -261,6 +323,7 @@ export default {
       title,
       currentSlide,
       totalSlides,
+      isAnimating,
       personalInfo,
       projects,
       experience,
@@ -268,15 +331,14 @@ export default {
       softSkills,
       interests,
       slidePosition,
-      nextSlide,
-      prevSlide
+      handleNextSlide,
+      handlePrevSlide
     }
   }
 }
 </script>
 
 <style lang="scss" scoped>
-/* Your existing styles remain the same */
 .profile-slider {
   width: 100%;
   height: 100vh;
@@ -284,17 +346,23 @@ export default {
   overflow: hidden;
   position: relative;
   display: flex;
+  perspective: 1000px;
 }
 
 .slider-container {
   flex: 1;
-  transition: transform 0.5s ease-in-out;
+  transition: transform 0.8s ease-in-out;
+  transform-style: preserve-3d;
+  will-change: transform;
 }
 
 .slide {
   height: 100vh;
   padding: 2rem;
   overflow-y: auto;
+  backface-visibility: hidden;
+  transition: opacity 0.5s ease-in-out;
+  background: var(--background-color);
 
   &::-webkit-scrollbar {
     width: 6px;
@@ -316,6 +384,24 @@ export default {
     border-radius: 50%;
     object-fit: cover;
     margin-bottom: 1rem;
+    box-shadow: 0 4px 12px var(--shadow-color);
+    transition: transform 0.3s ease;
+
+    &:hover {
+      transform: scale(1.05);
+    }
+  }
+
+  h1 {
+    margin-top: 1rem;
+    color: var(--text-color);
+    font-size: 2.5rem;
+  }
+
+  h2 {
+    color: var(--primary-color);
+    font-size: 1.8rem;
+    margin-top: 0.5rem;
   }
 }
 
@@ -324,32 +410,37 @@ export default {
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 1.5rem;
   margin-top: 2rem;
+  will-change: transform;
+  transition: transform 0.3s ease;
 }
 
 .project-card, .soft-skill-item, .interest-item {
-  background: #f5f5f5;
+  background: var(--background-color);
   padding: 1.5rem;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  transition: transform 0.2s ease;
+  box-shadow: 0 2px 4px var(--shadow-color);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  will-change: transform;
 
   &:hover {
     transform: translateY(-5px);
+    box-shadow: 0 4px 12px var(--shadow-color);
   }
 }
 
 .tech-tag, .skill-tag {
   display: inline-block;
-  background: #e0e0e0;
+  background: var(--primary-color);
+  color: var(--background-color);
   padding: 0.25rem 0.75rem;
   border-radius: 15px;
   margin: 0.25rem;
   font-size: 0.9rem;
-  transition: background-color 0.2s ease;
+  transition: all 0.3s ease;
 
   &:hover {
-    background: #42b883;
-    color: white;
+    background: var(--secondary-color);
+    transform: scale(1.05);
   }
 }
 
@@ -357,11 +448,12 @@ export default {
   .experience-item {
     margin-bottom: 2rem;
     padding-left: 1.5rem;
-    border-left: 2px solid #42b883;
-    transition: border-left-width 0.2s ease;
+    border-left: 2px solid var(--primary-color);
+    transition: border-left-width 0.2s ease, transform 0.3s ease;
 
     &:hover {
       border-left-width: 4px;
+      transform: translateX(5px);
     }
   }
 }
@@ -380,14 +472,14 @@ export default {
   .progress-bar {
     width: 4px;
     height: 200px;
-    background: #ddd;
+    background: var(--border-color);
     border-radius: 2px;
     overflow: hidden;
   }
 
   .progress {
     width: 100%;
-    background: #42b883;
+    background: var(--primary-color);
     border-radius: 2px;
     transition: height 0.3s ease;
   }
@@ -397,59 +489,152 @@ export default {
     height: 40px;
     padding: 0;
     border-radius: 50%;
-    background: #42b883;
-    color: white;
+    background: var(--primary-color);
+    color: var(--background-color);
     border: none;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 1.2rem;
-    transition: transform 0.2s ease;
+    transition: all 0.3s ease;
+    will-change: transform;
 
     &:hover:not(:disabled) {
       transform: scale(1.1);
+      background: var(--secondary-color);
+      box-shadow: 0 2px 8px var(--shadow-color);
+    }
+
+    &:active:not(:disabled) {
+      transform: scale(0.95);
     }
 
     &:disabled {
-      background: #ccc;
+      background: var(--border-color);
       cursor: not-allowed;
+      opacity: 0.6;
     }
   }
 }
 
+// Section-specific styles
 h2 {
-  color: #42b883;
+  color: var(--primary-color);
   margin-bottom: 2rem;
   font-size: 2rem;
+  position: relative;
+  
+  &:after {
+    content: '';
+    position: absolute;
+    bottom: -0.5rem;
+    left: 0;
+    width: 50px;
+    height: 3px;
+    background: var(--primary-color);
+    border-radius: 2px;
+  }
 }
 
 h3 {
-  color: #2c3e50;
+  color: var(--text-color);
   margin-bottom: 1rem;
 }
 
-.responsibilities {
-  margin-top: 1rem;
-  padding-left: 1.5rem;
-
-  li {
-    margin-bottom: 0.5rem;
-    transition: color 0.2s ease;
-
-    &:hover {
-      color: #42b883;
-    }
-  }
-}
-
+// Responsive styles
 @media (max-width: 768px) {
   .slider-nav {
     right: 1rem;
+
+    button {
+      width: 36px;
+      height: 36px;
+      font-size: 1rem;
+    }
+
+    .progress-bar {
+      height: 150px;
+    }
   }
 
   .slide {
     padding: 1rem;
+  }
+
+  .profile-image {
+    img {
+      width: 150px;
+      height: 150px;
+    }
+
+    h1 {
+      font-size: 2rem;
+    }
+
+    h2 {
+      font-size: 1.5rem;
+    }
+  }
+
+  .info-grid, .projects-grid, .skills-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .slider-nav {
+    right: 0.5rem;
+    
+    button {
+      width: 32px;
+      height: 32px;
+    }
+  }
+
+  h2 {
+    font-size: 1.6rem;
+  }
+
+  .profile-image {
+    img {
+      width: 120px;
+      height: 120px;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+    }
+
+    h2 {
+      font-size: 1.2rem;
+    }
+  }
+}
+
+// Animation classes
+.slide-enter-active,
+.slide-leave-active {
+  transition: all 0.8s ease-in-out;
+}
+
+.slide-enter-from {
+  transform: translateY(100%) rotateZ(5deg);
+  opacity: 0;
+}
+
+.slide-leave-to {
+  transform: translateY(-100%) rotateZ(-5deg);
+  opacity: 0;
+}
+
+// Add transition states
+.is-transitioning {
+  pointer-events: none;
+  user-select: none;
+
+  .slide {
+    transition: transform 0.8s ease-in-out, opacity 0.4s ease-in-out;
   }
 }
 </style>
