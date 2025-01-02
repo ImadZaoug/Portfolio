@@ -14,8 +14,8 @@
         :title="isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'"
       >
         <!-- Unicode characters for maximize/minimize icons -->
-        <span v-if="!isFullscreen">⛶</span> <!-- Maximize icon -->
-        <span v-else>⊡</span> <!-- Minimize icon -->
+        <span v-if="!isFullscreen">⛶</span>
+        <span v-else>⊡</span>
       </button>
     </div>
 
@@ -121,7 +121,6 @@
         ></div>
       </div>
     </div>
-
   </div>
 </template>
 
@@ -142,8 +141,13 @@ export default {
     maxPoints: {
       type: Number,
       default: 100
+    },
+    isFullscreen: {
+      type: Boolean,
+      default: false
     }
   },
+  
   emits: ['unlock-skill', 'fullscreen-change'],
   
   setup(props, { emit }) {
@@ -152,7 +156,6 @@ export default {
     const height = ref(800)
     const skillNodes = ref([])
     const connections = ref([])
-    const isFullscreen = ref(false)
     const zoom = ref(1)
     const minZoom = 0.5
     const maxZoom = 2
@@ -163,13 +166,6 @@ export default {
     const touchStartDistance = ref(0)
     const initialZoom = ref(1)
     const container = ref(null)
-
-    // Event Handlers
-    const handleEscKey = (e) => {
-      if (e.key === 'Escape' && isFullscreen.value) {
-        toggleFullscreen()
-      }
-    }
 
     // Node Management
     const initializeNodes = () => {
@@ -240,24 +236,36 @@ export default {
     }
 
     // Fullscreen Controls
-    const toggleFullscreen = () => {
-      isFullscreen.value = !isFullscreen.value
-      if (isFullscreen.value) {
-        document.documentElement.requestFullscreen?.()
-        document.body.style.overflow = 'hidden'
-      } else {
-        if (document.fullscreenElement) {
-          document.exitFullscreen?.()
+    const toggleFullscreen = async () => {
+      if (props.isFullscreen) {
+        try {
+          if (document.fullscreenElement) {
+            await document.exitFullscreen()
+          }
+          document.body.style.overflow = ''
+          
+          setTimeout(() => {
+            centerTree()
+            zoom.value = 1
+          }, 100)
+        } catch (err) {
+          console.error('Error exiting fullscreen:', err)
         }
-        document.body.style.overflow = ''
+      } else {
+        try {
+          await container.value?.requestFullscreen()
+          document.body.style.overflow = 'hidden'
+          
+          setTimeout(() => {
+            centerTree()
+            zoom.value = 1
+          }, 100)
+        } catch (err) {
+          console.error('Error entering fullscreen:', err)
+        }
       }
-      emit('fullscreen-change', isFullscreen.value)
       
-      // Reset position and zoom after state change
-      setTimeout(() => {
-        centerTree()
-        zoom.value = 1
-      }, 100)
+      emit('fullscreen-change', !props.isFullscreen)
     }
 
     // Zoom Controls
@@ -357,17 +365,31 @@ export default {
     // Lifecycle Hooks
     onMounted(() => {
       initializeNodes()
-      window.addEventListener('keydown', handleEscKey)
       window.addEventListener('resize', centerTree)
+      
+      // Add fullscreenchange event listener
+      document.addEventListener('fullscreenchange', () => {
+        if (!document.fullscreenElement && props.isFullscreen) {
+          emit('fullscreen-change', false)
+          document.body.style.overflow = ''
+          
+          setTimeout(() => {
+            centerTree()
+            zoom.value = 1
+          }, 100)
+        }
+      })
     })
 
     onUnmounted(() => {
-      window.removeEventListener('keydown', handleEscKey)
       window.removeEventListener('resize', centerTree)
-      if (isFullscreen.value) {
-        document.exitFullscreen?.()
-        document.body.style.overflow = ''
+      document.removeEventListener('fullscreenchange', null)
+      
+      if (document.fullscreenElement) {
+        document.exitFullscreen()
+          .catch(err => console.error('Error exiting fullscreen:', err))
       }
+      document.body.style.overflow = ''
     })
 
     return {
@@ -375,7 +397,6 @@ export default {
       height,
       skillNodes,
       connections,
-      isFullscreen,
       zoom,
       position,
       isPanning,
@@ -393,7 +414,8 @@ export default {
       stopPan,
       handleTouchStart,
       handleTouchMove,
-      handleTouchEnd: stopPan
+      handleTouchEnd: stopPan,
+      centerTree
     }
   }
 }
