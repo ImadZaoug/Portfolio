@@ -28,23 +28,7 @@
 
       <!-- Projects Section -->
       <section class="slide">
-        <div class="projects">
-          <h2>Projects</h2>
-          <div class="projects-grid">
-            <div v-for="project in projects" :key="project.title" class="project-card">
-              <h3>{{ project.title }}</h3>
-              <p class="project-type">{{ project.type }}</p>
-              <p class="project-desc">{{ project.description }}</p>
-              <div class="project-tech">
-                <span v-for="tech in project.technologies" 
-                      :key="tech" 
-                      class="tech-tag">
-                  {{ tech }}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
+        <LaboratoryProjects />
       </section>
 
       <!-- Professional Experience Section -->
@@ -128,14 +112,15 @@
   </div>
 </template>
 
-//frontend/src/components/ProfileSlider.vue script section
 <script>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import SkillTree from './SkillTree.vue'
+import LaboratoryProjects from './LaboratoryProjects.vue'
 
 export default {
   name: 'ProfileSlider',
   components: {
+    LaboratoryProjects,
     SkillTree
   },
   props: {
