@@ -1,5 +1,3 @@
-# frontend/src/components/solutions/TestTubeSolution.vue
-
 <template>
   <div ref="container" class="solution-3d-container">
     <canvas ref="canvas"></canvas>
@@ -14,6 +12,7 @@ const container = ref(null);
 const canvas = ref(null);
 let renderer, scene, camera;
 let testTube, liquid, bubbles = [], particles;
+let liquidGlow = [];
 let animationFrameId = null;
 let disposed = false;
 
@@ -21,6 +20,7 @@ const init = () => {
   if (!container.value || !canvas.value) return;
 
   scene = new THREE.Scene();
+  scene.background = null;
   
   camera = new THREE.PerspectiveCamera(
     45,
@@ -35,29 +35,54 @@ const init = () => {
     canvas: canvas.value,
     antialias: true,
     alpha: true,
-    powerPreference: "high-performance"
+    powerPreference: "high-performance",
+    logarithmicDepthBuffer: true
   });
   renderer.setSize(container.value.clientWidth, container.value.clientHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setClearColor(0x000000, 0);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.2;
-  
-  // Enhanced lighting for better liquid visibility
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+  renderer.sortObjects = true;
+
+  // Enhanced lighting setup
+  const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
   scene.add(ambientLight);
   
-  const mainLight = new THREE.PointLight(0xffffff, 2);
-  mainLight.position.set(2, 2, 4);
+  const mainLight = new THREE.SpotLight(0xffffff, 6.0);
+  mainLight.position.set(3, 3, 5);
+  mainLight.angle = Math.PI / 6;
+  mainLight.penumbra = 0.3;
   scene.add(mainLight);
 
-  const fillLight = new THREE.PointLight(0x66ffff, 2); // Cyan tinted light
-  fillLight.position.set(-2, -1, -2);
-  scene.add(fillLight);
-
-  const rimLight = new THREE.SpotLight(0x00ffff, 3); // Bright cyan rim light
+  const rimLight = new THREE.SpotLight(0x00ff00, 8.0);
   rimLight.position.set(-3, 0, -5);
+  rimLight.angle = Math.PI / 4;
+  rimLight.penumbra = 0.5;
   scene.add(rimLight);
+
+  const fillLight = new THREE.PointLight(0x00ff00, 4.0);
+  fillLight.position.set(-2, -3, -2);
+  scene.add(fillLight);
+  
+  const topLight = new THREE.PointLight(0x00ff00, 3.0);
+  topLight.position.set(0, 5, 0);
+  scene.add(topLight);
+
+  // Enhanced volumetric lighting
+  for (let i = 0; i < 8; i++) {
+    const angle = (i / 8) * Math.PI * 2;
+    const radius = 3;
+    const height = Math.sin(i * 0.8) * 2;
+    
+    const pointLight = new THREE.PointLight(0x00ff00, 1.5);
+    pointLight.position.set(
+      Math.cos(angle) * radius,
+      height,
+      Math.sin(angle) * radius
+    );
+    scene.add(pointLight);
+  }
   
   createTestTube();
   createLiquid();
@@ -74,123 +99,161 @@ const createTestTube = () => {
     metalness: 0.1,
     roughness: 0.05,
     transmission: 0.95,
-    thickness: 0.2,
+    thickness: 0.02,
     transparent: true,
     opacity: 0.3,
     clearcoat: 1,
-    clearcoatRoughness: 0.1
+    clearcoatRoughness: 0.1,
+    depthWrite: false,
+    depthTest: true
   });
   
   testTube = new THREE.Mesh(tubeGeometry, glassMaterial);
+  testTube.renderOrder = 2;
   scene.add(testTube);
 
-  // Add rounded bottom
   const bottomGeometry = new THREE.SphereGeometry(0.3, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2);
   const bottom = new THREE.Mesh(bottomGeometry, glassMaterial);
   bottom.position.y = -1.25;
+  bottom.renderOrder = 2;
   scene.add(bottom);
 };
 
 const createLiquid = () => {
-  // Main liquid body with vibrant cyan color
-  const liquidGeometry = new THREE.CylinderGeometry(0.25, 0.25, 2, 32);
+  // Main liquid body with enhanced material
+  const liquidGeometry = new THREE.CylinderGeometry(0.22, 0.22, 1.9, 32);
   const liquidMaterial = new THREE.MeshPhysicalMaterial({
-    color: 0x00ffff, // Bright cyan base color
+    color: new THREE.Color(0x00ff00).multiplyScalar(2),
+    emissive: new THREE.Color(0x00ff00).multiplyScalar(1.5),
     metalness: 0.2,
     roughness: 0.1,
-    transmission: 0.4,
+    transmission: 0.8,
     transparent: true,
-    opacity: 0.7,
-    emissive: 0x00ffff, // Cyan glow
-    emissiveIntensity: 0.5
+    opacity: 0.9,
+    depthWrite: true,
+    depthTest: true
   });
   
   liquid = new THREE.Mesh(liquidGeometry, liquidMaterial);
   liquid.position.y = -0.2;
+  liquid.renderOrder = 1;
   scene.add(liquid);
 
-  // Rounded bottom of liquid
-  const bottomLiquidGeometry = new THREE.SphereGeometry(0.25, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2);
-  const bottomLiquid = new THREE.Mesh(bottomLiquidGeometry, liquidMaterial);
-  bottomLiquid.position.y = -1.2;
-  scene.add(bottomLiquid);
+  // Enhanced inner glow system
+  const createGlowLayer = (radius, height, intensity, opacity) => {
+    const geometry = new THREE.CylinderGeometry(radius, radius, height, 32);
+    const material = new THREE.MeshBasicMaterial({
+      color: new THREE.Color(0x00ff00).multiplyScalar(intensity),
+      transparent: true,
+      opacity: opacity,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.y = -0.2;
+    mesh.renderOrder = 1;
+    scene.add(mesh);
+    return mesh;
+  };
 
-  // Liquid surface with enhanced glow
-  const surfaceGeometry = new THREE.CircleGeometry(0.25, 32);
+  // Create multiple glow layers
+  liquidGlow = [];
+  for (let i = 0; i < 5; i++) {
+    const radius = 0.15 + i * 0.015;
+    const height = 1.8 + i * 0.02;
+    const intensity = 2 - i * 0.3;
+    const opacity = 0.4 - i * 0.06;
+    
+    const glow = createGlowLayer(radius, height, intensity, opacity);
+    liquidGlow.push(glow);
+  }
+
+  // Enhanced liquid surface with fresnel effect
+  const surfaceGeometry = new THREE.CircleGeometry(0.22, 32);
   const surfaceMaterial = new THREE.MeshPhysicalMaterial({
-    color: 0x00ffff,
+    color: new THREE.Color(0x00ff00).multiplyScalar(2),
+    emissive: new THREE.Color(0x00ff00).multiplyScalar(1.5),
     metalness: 0.3,
     roughness: 0.2,
-    transmission: 0.3,
     transparent: true,
     opacity: 0.9,
-    emissive: 0x00ffff,
-    emissiveIntensity: 0.8
+    depthWrite: false,
+    side: THREE.DoubleSide
   });
+  
   const surface = new THREE.Mesh(surfaceGeometry, surfaceMaterial);
   surface.rotation.x = -Math.PI / 2;
   surface.position.y = 0.8;
+  surface.renderOrder = 1;
   scene.add(surface);
 };
 
 const createParticles = () => {
-  const particleCount = 150;
+  const particleCount = 200; // Increased particle count
   const geometry = new THREE.BufferGeometry();
   const positions = new Float32Array(particleCount * 3);
   const colors = new Float32Array(particleCount * 3);
+  const sizes = new Float32Array(particleCount);
   
-  for (let i = 0; i < particleCount * 3; i += 3) {
+  for (let i = 0; i < particleCount; i++) {
     const radius = Math.random() * 0.2;
     const theta = Math.random() * Math.PI * 2;
     const y = Math.random() * 1.8 - 1;
     
-    positions[i] = radius * Math.cos(theta);
-    positions[i + 1] = y;
-    positions[i + 2] = radius * Math.sin(theta);
+    const index = i * 3;
+    positions[index] = radius * Math.cos(theta);
+    positions[index + 1] = y;
+    positions[index + 2] = radius * Math.sin(theta);
 
-    // Brighter particle colors
-    colors[i] = 0;     // R
-    colors[i + 1] = 1; // G
-    colors[i + 2] = 1; // B
+    colors[index] = 0;
+    colors[index + 1] = 1;
+    colors[index + 2] = 0;
+    
+    sizes[i] = Math.random() * 0.01 + 0.005;
   }
   
   geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
   geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
   
   const material = new THREE.PointsMaterial({
     size: 0.015,
     transparent: true,
-    opacity: 0.8,
+    opacity: 0.6,
     blending: THREE.AdditiveBlending,
     vertexColors: true,
-    depthWrite: false
+    depthWrite: false,
+    sizeAttenuation: true
   });
   
   particles = new THREE.Points(geometry, material);
+  particles.renderOrder = 3;
   scene.add(particles);
 };
 
 const createBubbles = () => {
-  const bubbleGeometry = new THREE.SphereGeometry(0.02, 8, 8);
+  const bubbleGeometry = new THREE.SphereGeometry(0.02, 12, 12); // Increased segments
   const bubbleMaterial = new THREE.MeshPhysicalMaterial({
-    color: 0x00ffff,
+    color: 0xffffff,
     metalness: 0.1,
     roughness: 0.1,
-    transmission: 0.9,
+    transmission: 0.95,
     transparent: true,
-    opacity: 0.4,
-    emissive: 0x00ffff,
-    emissiveIntensity: 0.5
+    opacity: 0.3,
+    depthWrite: false,
+    depthTest: true
   });
 
-  for (let i = 0; i < 20; i++) {
+  for (let i = 0; i < 25; i++) { // Increased bubble count
     const bubble = new THREE.Mesh(bubbleGeometry, bubbleMaterial);
     resetBubble(bubble);
+    bubble.renderOrder = 4;
     scene.add(bubble);
     bubbles.push({
       mesh: bubble,
       speed: Math.random() * 0.004 + 0.002,
-      offset: Math.random() * Math.PI * 2
+      offset: Math.random() * Math.PI * 2,
+      wobbleSpeed: Math.random() * 2 + 1
     });
   }
 };
@@ -209,41 +272,70 @@ const animate = () => {
   
   animationFrameId = requestAnimationFrame(animate);
   
+  const time = Date.now() * 0.001;
+
   if (testTube && liquid && particles) {
-    const time = Date.now() * 0.001;
+    const rotation = Math.sin(time * 0.5) * 0.1;
+    testTube.rotation.y = rotation;
+    liquid.rotation.y = rotation;
     
-    // Gentle tube rotation
-    testTube.rotation.y = Math.sin(time * 0.5) * 0.1;
-    
-    // Liquid movement
-    liquid.rotation.y = Math.sin(time * 0.5) * 0.1;
-    liquid.position.y = -0.2 + Math.sin(time) * 0.01;
-    
-    // Particle animation
+    // Animate liquid and glow
+    const liquidOffset = Math.sin(time) * 0.01;
+    liquid.position.y = -0.2 + liquidOffset;
+    liquidGlow.forEach((glow, index) => {
+      glow.rotation.y = rotation + Math.sin(time * 0.3 + index * 0.2) * 0.05;
+      glow.position.y = -0.2 + liquidOffset + Math.sin(time * 0.8 + index) * 0.005;
+      glow.material.opacity = (0.4 - index * 0.06) * (0.8 + Math.sin(time * 2 + index) * 0.2);
+    });
+
+    // Enhanced particle animation
     const positions = particles.geometry.attributes.position.array;
+    const sizes = particles.geometry.attributes.size.array;
+    
     for (let i = 0; i < positions.length; i += 3) {
-      positions[i] += Math.sin(time + i) * 0.0005;
-      positions[i + 1] += Math.cos(time + i) * 0.001;
+      // Spiral motion
+      const x = positions[i];
+      const z = positions[i + 2];
+      const radius = Math.sqrt(x * x + z * z);
+      const angle = Math.atan2(z, x) + 0.02;
+      
+      positions[i] = Math.cos(angle) * radius;
+      positions[i + 2] = Math.sin(angle) * radius;
+      
+      // Vertical motion with varying speed
+      positions[i + 1] += (0.002 + Math.sin(time + i) * 0.001);
       if (positions[i + 1] > 0.8) positions[i + 1] = -1;
-      
-      const radius = Math.sqrt(
-        positions[i] * positions[i] + 
-        positions[i + 2] * positions[i + 2]
-      );
-      
-      if (radius > 0.2) {
-        const theta = Math.atan2(positions[i + 2], positions[i]);
+
+      // Size pulsing
+      const sizeIndex = i / 3;
+      sizes[sizeIndex] = (Math.sin(time * 2 + sizeIndex) * 0.3 + 0.7) * 
+                        (Math.random() * 0.01 + 0.005);
+
+      // Contain particles
+      if (radius > 0.19) {
+        const theta = Math.atan2(z, x);
         positions[i] = Math.cos(theta) * 0.19;
         positions[i + 2] = Math.sin(theta) * 0.19;
       }
     }
+    
     particles.geometry.attributes.position.needsUpdate = true;
+    particles.geometry.attributes.size.needsUpdate = true;
 
-    // Bubble animation
+    // Enhanced bubble animation
     bubbles.forEach((bubble) => {
       bubble.mesh.position.y += bubble.speed;
-      bubble.mesh.position.x += Math.sin(time + bubble.offset) * 0.001;
-      bubble.mesh.position.z += Math.cos(time + bubble.offset) * 0.001;
+      
+      // Add wobble motion
+      const wobble = Math.sin(time * bubble.wobbleSpeed + bubble.offset);
+      bubble.mesh.position.x += Math.sin(time + bubble.offset) * 0.001 * wobble;
+      bubble.mesh.position.z += Math.cos(time + bubble.offset) * 0.001 * wobble;
+      
+      // Scale variation
+      bubble.mesh.scale.setScalar(
+        (bubble.mesh.scale.x + Math.sin(time * 3 + bubble.offset) * 0.1)
+        * (0.5 + Math.random() * 0.5)
+      );
 
       if (bubble.mesh.position.y > 0.8) {
         resetBubble(bubble.mesh);
@@ -263,7 +355,7 @@ const handleResize = () => {
 };
 
 const cleanup = () => {
-  disposed = true;
+      disposed = true;
   cancelAnimationFrame(animationFrameId);
   
   if (renderer) {
@@ -293,6 +385,7 @@ const cleanup = () => {
   liquid = null;
   particles = null;
   bubbles = [];
+  liquidGlow = [];
 };
 
 onMounted(() => {
@@ -319,5 +412,6 @@ canvas {
   width: 100% !important;
   height: 100% !important;
   outline: none;
+  background: transparent;
 }
 </style>
