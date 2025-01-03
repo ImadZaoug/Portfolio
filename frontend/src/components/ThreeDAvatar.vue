@@ -3,14 +3,21 @@
   <div class="avatar-container" :class="{ 'avatar-right': position === 'right' }">
     <canvas ref="canvas" />
     <div v-if="!loaded" class="loading">Loading avatar...</div>
-    <button 
-      @click="handleThemeToggle" 
-      class="theme-toggle" 
-      :class="{ 'dark': isDarkTheme }" 
-      :disabled="isTransitioning"
-    >
-      {{ isDarkTheme ? 'Light Mode' : 'Dark Mode' }}
-    </button>
+      <button 
+        @click="handleThemeToggle" 
+        class="theme-toggle" 
+        :class="{ 'dark': isDarkTheme }" 
+        :disabled="isTransitioning"
+      >
+        <span v-if="isDarkTheme">
+          <i class="fa-solid fa-sun"></i>
+          Light Mode
+        </span>
+        <span v-else>
+          <i class="fa-solid fa-moon"></i>
+          Dark Mode
+        </span>
+      </button>
   </div>
 </template>
 
@@ -512,6 +519,14 @@ export default {
   font-weight: 600;
   z-index: 1001;
   min-width: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  i {
+    font-size: 1.1rem;
+  }
 
   &.dark {
     background: var(--secondary-color);
@@ -536,25 +551,16 @@ canvas {
 }
 
 @media (max-width: 768px) {
-  .avatar-container {
-    width: 300px;
-    height: 500px;
-
-    &.avatar-right {
-      right: 40px;
-    }
-
-    &:not(.avatar-right) {
-      left: 40px;
-    }
-  }
-
   .theme-toggle {
     top: 10px;
     right: 10px;
     padding: 6px 12px;
     min-width: 100px;
     font-size: 0.9rem;
+
+    i {
+      font-size: 1rem;
+    }
   }
 }
 

@@ -6,7 +6,7 @@
       
       <!-- Combined Profile and Personal Info Section -->
       <section class="slide">
-        <PersonalProfile />
+        <PersonalProfile @expand="handleProfileExpand" />
       </section>
 
       <!-- Projects Section -->
@@ -54,10 +54,10 @@
 </template>
 
 <script>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useProfileStore } from '../stores/profile'
-import { useSkillsStore } from '../stores/skills'
-import { useExperienceStore } from '../stores/experience'
+import { defineComponent, ref, computed, onMounted, onUnmounted } from 'vue'
+import { useProfileStore } from '@/stores/profile'
+import { useSkillsStore } from '@/stores/skills'
+import { useExperienceStore } from '@/stores/experience'
 import PersonalProfile from './PersonalProfile.vue'
 import LaboratoryProjects from './LaboratoryProjects.vue'
 import ExperienceSection from './ExperienceSection.vue'
@@ -65,8 +65,9 @@ import SkillsSection from './SkillsSection.vue'
 import SoftSkillsSection from './SoftSkillsSection.vue'
 import InterestsSection from './InterestsSection.vue'
 
-export default {
+export default defineComponent({
   name: 'ProfileSlider',
+  
   components: {
     PersonalProfile,
     LaboratoryProjects,
@@ -75,6 +76,7 @@ export default {
     SoftSkillsSection,
     InterestsSection
   },
+  
   props: {
     disabled: {
       type: Boolean,
@@ -83,9 +85,20 @@ export default {
     isFullscreen: {
       type: Boolean,
       default: false
+    },
+    expanded: {
+      type: Boolean,
+      default: false
     }
   },
-  emits: ['section-change', 'animation-start', 'animation-complete'],
+  
+  emits: [
+    'section-change', 
+    'animation-start', 
+    'animation-complete', 
+    'fullscreen-change',
+    'profile-expand'
+  ],
   
   setup(props, { emit }) {
     const profileStore = useProfileStore()
@@ -93,7 +106,7 @@ export default {
     const experienceStore = useExperienceStore()
 
     const currentSlide = ref(0)
-    const totalSlides = ref(6) // Updated to reflect combined profile sections
+    const totalSlides = ref(6)
     const isAnimating = ref(false)
     const isSkillTreeFullscreen = ref(false)
 
@@ -165,6 +178,12 @@ export default {
       emit('fullscreen-change', isFullscreen)
     }
 
+    // Profile expansion handling
+    const handleProfileExpand = (expanded) => {
+      console.log('ProfileSlider: forwarding expand event', expanded) // Debug log
+      emit('profile-expand', expanded)
+    }
+
     // Keyboard navigation
     const handleKeydown = (e) => {
       if (props.disabled || isSkillTreeFullscreen.value) return
@@ -196,10 +215,11 @@ export default {
       slidePosition,
       handleNextSlide,
       handlePrevSlide,
-      handleFullscreenChange
+      handleFullscreenChange,
+      handleProfileExpand
     }
   }
-}
+})
 </script>
 
 <style lang="scss" scoped>
