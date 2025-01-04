@@ -4,7 +4,10 @@
     <!-- Main Content -->
     <div 
       class="avatar-sidebar" 
-      :class="{ 'avatar-right': isAvatarRight, 'blurred': isProfileExpanded }"
+      :class="{ 
+        'avatar-right': isAvatarRight, 
+        'blurred': isProfileExpanded || isSolutionExpanded 
+      }"
     >
       <ThreeDAvatar 
         ref="avatar"
@@ -16,16 +19,21 @@
     </div>
     <div 
       class="main-content" 
-      :class="{ 'content-left': isAvatarRight, 'blurred': isProfileExpanded }"
+      :class="{ 
+        'content-left': isAvatarRight, 
+        'blurred': isProfileExpanded || isSolutionExpanded 
+      }"
     >
       <ProfileSlider 
         @section-change="handleSectionChange"
         @animation-start="handleAnimationStart"
         @animation-complete="handleAnimationComplete"
         @fullscreen-change="handleFullscreenChange"
+        @solution-expand="handleSolutionExpand"
         :is-fullscreen="isSkillTreeFullscreen"
-        :disabled="isAnimating || isProfileExpanded"
+        :disabled="isAnimating || isProfileExpanded || isSolutionExpanded"
         @profile-expand="handleProfileExpand"
+        :is-solution-expanded="isSolutionExpanded"
       />
     </div>
 
@@ -53,6 +61,13 @@
       </div>
     </transition>
 
+    <!-- Solution Detail Overlay -->
+    <SolutionDetail
+      v-if="isSolutionExpanded"
+      :solution="selectedSolution"
+      @close="handleSolutionExpand({ expanded: false })"
+    />
+
     <!-- Skills Tree Overlay -->
     <transition name="skills-expand">
       <div 
@@ -78,6 +93,7 @@ import { useThemeStore } from '@/stores/theme'
 import ProfileSlider from '@/components/ProfileSlider.vue'
 import ThreeDAvatar from '@/components/ThreeDAvatar.vue'
 import ProfileDetail from '@/components/ProfileDetail.vue'
+import SolutionDetail from '@/components/SolutionDetail.vue'
 
 export default defineComponent({
   name: 'HomeView',
@@ -85,7 +101,8 @@ export default defineComponent({
   components: {
     ProfileSlider,
     ThreeDAvatar,
-    ProfileDetail
+    ProfileDetail,
+    SolutionDetail
   },
   
   setup() {
@@ -98,7 +115,9 @@ export default defineComponent({
       currentSection: 0,
       isAnimating: false,
       isSkillTreeFullscreen: false,
-      isProfileExpanded: false
+      isProfileExpanded: false,
+      isSolutionExpanded: false,
+      selectedSolution: null
     }
   },
   
@@ -113,6 +132,9 @@ export default defineComponent({
       document.body.style.overflow = newVal ? 'hidden' : ''
     },
     isSkillTreeFullscreen(newVal) {
+      document.body.style.overflow = newVal ? 'hidden' : ''
+    },
+    isSolutionExpanded(newVal) {
       document.body.style.overflow = newVal ? 'hidden' : ''
     }
   },
@@ -143,6 +165,22 @@ export default defineComponent({
 
     handleProfileExpand(expanded) {
       this.isProfileExpanded = expanded
+      
+      // Close other overlays if opening profile
+      if (expanded) {
+        this.isSolutionExpanded = false
+        this.selectedSolution = null
+      }
+    },
+
+    handleSolutionExpand({ expanded, solution }) {
+      this.isSolutionExpanded = expanded
+      this.selectedSolution = expanded ? solution : null
+      
+      // Close other overlays if opening solution
+      if (expanded) {
+        this.isProfileExpanded = false
+      }
     }
   },
   
@@ -159,7 +197,7 @@ export default defineComponent({
   height: 100vh;
   overflow: hidden;
   position: relative;
-  background: var(--v-background-base);
+  background: var(--v-theme-background);
   transition: background-color 0.3s ease;
 }
 
@@ -208,7 +246,7 @@ export default defineComponent({
   inset: 0;
   background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(10px);
-  z-index: 9999;
+  z-index: 99999;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -230,34 +268,48 @@ export default defineComponent({
   flex-direction: column;
   border-radius: 16px;
   overflow: hidden;
-  background: var(--v-background-base);
+  background: var(--v-theme-background);
 
   .v-card-text {
     flex: 1;
     overflow-y: auto;
+    color: var(--v-theme-on-surface) !important;
     
     &::-webkit-scrollbar {
       width: 8px;
     }
     
     &::-webkit-scrollbar-track {
-      background: rgba(0, 0, 0, 0.1);
+      background: rgba(var(--v-theme-on-surface), 0.1);
       border-radius: 4px;
     }
     
     &::-webkit-scrollbar-thumb {
-      background: var(--v-primary-base);
+      background: var(--v-theme-primary);
       border-radius: 4px;
       
       &:hover {
-        background: var(--v-primary-darken-1);
+        background: var(--v-theme-secondary);
       }
+    }
+  }
+
+  :deep(.v-theme--dark) {
+    .text-h4 {
+      color: var(--v-theme-primary) !important;
+    }
+  }
+
+  :deep(.v-theme--light) {
+    .text-h4 {
+      color: var(--v-theme-primary) !important;
     }
   }
 }
 
 .close-btn {
   transition: transform 0.3s ease;
+  color: var(--v-theme-on-surface) !important;
 
   &:hover {
     transform: rotate(90deg);
@@ -269,7 +321,7 @@ export default defineComponent({
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.85);
-  z-index: 9998;
+  z-index: 99998;
   display: flex;
   align-items: center;
   justify-content: center;

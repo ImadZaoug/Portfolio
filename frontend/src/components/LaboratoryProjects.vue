@@ -1,71 +1,70 @@
 # frontend/src/components/LaboratoryProjects.vue
-
 <template>
   <div 
     class="laboratory-container" 
-    :class="{ 'has-selected': selectedSolution }"
+    :class="{ 'has-selected': props.isExpanded }"
   >
-    <h1 class="main-title">Research & Development Projects</h1>
+    <div :class="{ 'blurred': props.isExpanded }">
+      <h1 class="main-title">Research & Development Projects</h1>
 
-    <!-- Scrollable grid container -->
-    <div class="solutions-grid-container">
-      <!-- Industrial Projects Section -->
-      <div class="project-section">
-        <h2 class="section-title">Industrial Collaboration Projects</h2>
-        <p class="section-description">Advanced 3D simulation and modeling projects developed in collaboration with industry partners</p>
-        
-        <div class="solutions-grid">
-          <div 
-            v-for="solution in industrialProjects" 
-            :key="solution.id"
-            class="solution-wrapper"
-            :class="{ 'blur-this': selectedSolution && selectedSolution.id !== solution.id }"
-          >
+      <!-- Scrollable grid container -->
+      <div class="solutions-grid-container">
+        <!-- Industrial Projects Section -->
+        <div class="project-section">
+          <h2 class="section-title">Industrial Collaboration Projects</h2>
+          <p class="section-description">Advanced 3D simulation and modeling projects developed in collaboration with industry partners</p>
+          
+          <div class="solutions-grid">
             <div 
-              class="solution-card"
-              @click="handleSolutionClick(solution)"
+              v-for="solution in industrialProjects" 
+              :key="solution.id"
+              class="solution-wrapper"
             >
-              <div class="solution-content">
-                <div class="jar-container">
-                  <component 
-                    :is="getSolutionComponent(solution.type)"
-                  />
-                </div>
-                <div class="solution-info">
-                  <h3>{{ solution.title }}</h3>
-                  <p>{{ solution.shortDesc }}</p>
+              <div 
+                class="solution-card"
+                @click="handleSolutionClick(solution)"
+              >
+                <div class="solution-content">
+                  <div class="jar-container">
+                    <component 
+                      :is="getSolutionComponent(solution.type)"
+                    />
+                  </div>
+                  <div class="solution-info">
+                    <h3>{{ solution.title }}</h3>
+                    <p>{{ solution.shortDesc }}</p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Personal Projects Section -->
-      <div class="project-section">
-        <h2 class="section-title">Personal Innovation Projects</h2>
-        <p class="section-description">Self-initiated projects exploring business ideas and technical concepts</p>
-        
-        <div class="solutions-grid">
-          <div 
-            v-for="solution in personalProjects" 
-            :key="solution.id"
-            class="solution-wrapper"
-            :class="{ 'blur-this': selectedSolution && selectedSolution.id !== solution.id }"
-          >
+        <!-- Personal Projects Section -->
+        <div class="project-section">
+          <h2 class="section-title">Personal Innovation Projects</h2>
+          <p class="section-description">Self-initiated projects exploring business ideas and technical concepts</p>
+          
+          <div class="solutions-grid">
             <div 
-              class="solution-card"
-              @click="handleSolutionClick(solution)"
+              v-for="solution in personalProjects" 
+              :key="solution.id"
+              class="solution-wrapper"
             >
-              <div class="solution-content">
-                <div class="jar-container">
-                  <component 
-                    :is="getSolutionComponent(solution.type)"
-                  />
-                </div>
-                <div class="solution-info">
-                  <h3>{{ solution.title }}</h3>
-                  <p>{{ solution.shortDesc }}</p>
+              <div 
+                class="solution-card"
+                @click="handleSolutionClick(solution)"
+              >
+                <div class="solution-content">
+                  <div class="jar-container">
+                    <component 
+                      :is="getSolutionComponent(solution.type)"
+                    />
+                  </div>
+                  <div class="solution-info">
+                    <h3>{{ solution.title }}</h3>
+                    <p>{{ solution.shortDesc }}</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -73,59 +72,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Focused jar view (appears when selected) -->
-    <Transition name="focus">
-      <div 
-        v-if="selectedSolution" 
-        class="focused-solution"
-        @click="closeDetails"
-      >
-        <div class="focused-jar">
-          <component 
-            :is="getSolutionComponent(selectedSolution.type)"
-            class="enlarged"
-          />
-        </div>
-      </div>
-    </Transition>
-
-    <!-- Description message -->
-    <Transition name="message">
-      <div 
-        v-if="showDescription" 
-        class="solution-details"
-      >
-        <div class="details-content">
-          <div class="message-header">
-            <h2>{{ selectedSolution.title }}</h2>
-            <button @click="closeDetails" class="close-button">
-              <span class="close-icon">×</span>
-            </button>
-          </div>
-          <div class="message-body">
-            <p>{{ selectedSolution.fullDesc }}</p>
-            <div class="tech-stack">
-              <span 
-                v-for="tech in selectedSolution.technologies" 
-                :key="tech" 
-                class="tech-tag"
-              >
-                {{ tech }}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </Transition>
-
-    <!-- Overlay for background -->
-    <div 
-      v-if="selectedSolution" 
-      class="backdrop"
-      :class="{ 'active': showDescription }"
-      @click="closeDetails"
-    ></div>
   </div>
 </template>
 
@@ -143,8 +89,16 @@ import FreezingSolution from './solutions/FreezingSolution.vue';
 import LaserSolution from './solutions/LaserSolution.vue';
 import VortexSolution from './solutions/VortexSolution.vue';
 
-const selectedSolution = ref(null);
-const showDescription = ref(false);
+/* eslint-disable no-undef */
+const props = defineProps({
+  isExpanded: {
+    type: Boolean,
+    default: false
+  }
+});
+
+const emit = defineEmits(['solution-expand']);
+/* eslint-enable no-undef */
 
 // Industrial (3D) Projects
 const industrialProjects = ref([
@@ -259,18 +213,8 @@ const getSolutionComponent = (type) => {
   }
 };
 
-const handleSolutionClick = async (solution) => {
-  if (selectedSolution.value === solution) return;
-  
-  selectedSolution.value = solution;
-  await new Promise(resolve => setTimeout(resolve, 400));
-  showDescription.value = true;
-};
-
-const closeDetails = async () => {
-  showDescription.value = false;
-  await new Promise(resolve => setTimeout(resolve, 300));
-  selectedSolution.value = null;
+const handleSolutionClick = (solution) => {
+  emit('solution-expand', { expanded: true, solution });
 };
 </script>
 
@@ -280,9 +224,9 @@ const closeDetails = async () => {
   width: 100%;
   height: 100%;
   padding: 2rem;
-  perspective: 2000px;
-  min-height: 600px;
-  overflow: hidden;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
   
   &.has-selected {
     .solutions-grid {
@@ -300,9 +244,13 @@ const closeDetails = async () => {
 }
 
 .project-section {
-  margin-bottom: 4rem;
+  margin-bottom: 3rem;
+  
+  &:last-child {
+    margin-bottom: 0;
+    padding-bottom: 2rem;
+  }
 }
-
 .section-title {
   font-size: 2rem;
   font-weight: 600;
@@ -318,9 +266,10 @@ const closeDetails = async () => {
 }
 
 .solutions-grid-container {
-  height: 100%;
+  flex: 1;
   overflow-y: auto;
   padding-right: 1rem;
+  min-height: 0;  // Important for flex overflow
   
   &::-webkit-scrollbar {
     width: 8px;
@@ -787,12 +736,6 @@ const closeDetails = async () => {
   .solution-card {
     box-shadow: none;
     border: 1px solid #ddd;
-  }
-
-  .focused-solution,
-  .solution-details,
-  .backdrop {
-    display: none !important;
   }
 }
 </style>

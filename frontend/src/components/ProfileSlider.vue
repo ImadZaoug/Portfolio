@@ -1,4 +1,4 @@
-// ProfileSlider.vue
+# frontend/src/components/ProfileSlider.vue
 <template>
   <div class="profile-slider">
     <div class="slider-container" 
@@ -11,7 +11,10 @@
 
       <!-- Projects Section -->
       <section class="slide">
-        <LaboratoryProjects />
+        <LaboratoryProjects 
+          :is-expanded="isSolutionExpanded"
+          @solution-expand="handleSolutionExpand"
+        />
       </section>
 
       <!-- Professional Experience Section -->
@@ -41,14 +44,27 @@
     </div>
 
     <!-- Navigation -->
-    <div class="slider-nav">
+    <div 
+      class="slider-nav"
+      v-show="!isFullscreen && !isSolutionExpanded"
+    >
       <div class="progress-bar">
         <div class="progress" 
              :style="{ height: `${(currentSlide / (totalSlides - 1)) * 100}%` }">
         </div>
       </div>
-      <button @click="handlePrevSlide" :disabled="isAnimating || currentSlide === 0">↑</button>
-      <button @click="handleNextSlide" :disabled="isAnimating || currentSlide === totalSlides - 1">↓</button>
+      <button 
+        @click="handlePrevSlide" 
+        :disabled="isAnimating || currentSlide === 0 || disabled"
+      >
+        ↑
+      </button>
+      <button 
+        @click="handleNextSlide" 
+        :disabled="isAnimating || currentSlide === totalSlides - 1 || disabled"
+      >
+        ↓
+      </button>
     </div>
   </div>
 </template>
@@ -89,6 +105,18 @@ export default defineComponent({
     expanded: {
       type: Boolean,
       default: false
+    },
+    isSolutionExpanded: {
+      type: Boolean,
+      default: false
+    },
+    initialSection: {
+      type: Number,
+      default: 0
+    },
+    disableNavigation: {
+      type: Boolean,
+      default: false
     }
   },
   
@@ -97,7 +125,8 @@ export default defineComponent({
     'animation-start', 
     'animation-complete', 
     'fullscreen-change',
-    'profile-expand'
+    'profile-expand',
+    'solution-expand'
   ],
   
   setup(props, { emit }) {
@@ -105,7 +134,7 @@ export default defineComponent({
     const skillsStore = useSkillsStore()
     const experienceStore = useExperienceStore()
 
-    const currentSlide = ref(0)
+    const currentSlide = ref(props.initialSection)
     const totalSlides = ref(6)
     const isAnimating = ref(false)
     const isSkillTreeFullscreen = ref(false)
@@ -129,7 +158,7 @@ export default defineComponent({
 
     // Navigation methods
     const handleNextSlide = async () => {
-      if (props.disabled || isAnimating.value || currentSlide.value >= totalSlides.value - 1) return
+      if (props.disabled || props.disableNavigation || isAnimating.value || currentSlide.value >= totalSlides.value - 1) return
       
       isAnimating.value = true
       const animation = getScrollAnimation('down', currentSlide.value)
@@ -151,7 +180,7 @@ export default defineComponent({
     }
 
     const handlePrevSlide = async () => {
-      if (props.disabled || isAnimating.value || currentSlide.value <= 0) return
+      if (props.disabled || props.disableNavigation || isAnimating.value || currentSlide.value <= 0) return
       
       isAnimating.value = true
       const animation = getScrollAnimation('up', currentSlide.value)
@@ -180,17 +209,23 @@ export default defineComponent({
 
     // Profile expansion handling
     const handleProfileExpand = (expanded) => {
-      console.log('ProfileSlider: forwarding expand event', expanded) // Debug log
       emit('profile-expand', expanded)
+    }
+
+    // Solution expansion handling
+    const handleSolutionExpand = ({ expanded, solution }) => {
+      emit('solution-expand', { expanded, solution })
     }
 
     // Keyboard navigation
     const handleKeydown = (e) => {
-      if (props.disabled || isSkillTreeFullscreen.value) return
+      if (props.disabled || props.disableNavigation || isSkillTreeFullscreen.value || props.isSolutionExpanded) return
       
       if (e.key === 'ArrowUp') {
+        e.preventDefault()
         handlePrevSlide()
       } else if (e.key === 'ArrowDown') {
+        e.preventDefault()
         handleNextSlide()
       }
     }
@@ -216,7 +251,8 @@ export default defineComponent({
       handleNextSlide,
       handlePrevSlide,
       handleFullscreenChange,
-      handleProfileExpand
+      handleProfileExpand,
+      handleSolutionExpand
     }
   }
 })
@@ -225,7 +261,7 @@ export default defineComponent({
 <style lang="scss" scoped>
 // Variables
 :root {
-  --fullscreen-z-index: 9999;
+  --fullscreen-z-index: 99997;  // Make this lower than the overlays
 }
 
 .skills-section {
@@ -262,12 +298,12 @@ export default defineComponent({
   overflow-y: auto;
   backface-visibility: hidden;
   transition: opacity 0.5s ease-in-out;
-  background: var(--background-color);
+  background: var(--v-theme-background);
 
   &::-webkit-scrollbar {
     width: 6px;
     &-thumb {
-      background-color: rgba(0, 0, 0, 0.2);
+      background-color: var(--v-theme-primary);
       border-radius: 3px;
     }
   }
@@ -286,125 +322,8 @@ export default defineComponent({
       margin: 0;
       padding: 0;
       overflow: hidden;
-
-      .skills-container {
-        position: fixed;
-        inset: 0;
-        height: 100vh;
-        width: 100vw;
-        border-radius: 0;
-        margin: 0;
-        padding: 0;
-        z-index: var(--fullscreen-z-index);
-
-        &.fullscreen {
-          box-shadow: none;
-        }
-      }
-
-      .skills h2 {
-        position: fixed;
-        top: 2rem;
-        left: 2rem;
-        z-index: calc(var(--fullscreen-z-index) + 1);
-        margin: 0;
-        color: #fff;
-        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-      }
     }
   }
-}
-
-// Grid layouts
-.soft-skills-grid, 
-.interests-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
-  margin-top: 2.5rem;
-  will-change: transform;
-  transition: transform 0.3s ease;
-}
-
-// Card styles
-.soft-skill-item, 
-.interest-item {
-  background: var(--background-color);
-  padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px var(--shadow-color);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  will-change: transform;
-
-  &:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 4px 12px var(--shadow-color);
-  }
-}
-
-// Skills section styles
-.skills {
-  .skills-container {
-    position: relative;
-    width: 100%;
-    height: calc(100vh - 200px);
-    overflow: hidden;
-    border-radius: 12px;
-    background: radial-gradient(circle at center, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.95) 100%);
-    box-shadow: 0 4px 20px var(--shadow-color);
-    transition: all 0.3s ease-in-out;
-    
-    &.fullscreen-container {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      z-index: 9999;
-      border-radius: 0;
-      margin: 0;
-      padding: 0;
-    }
-  }
-
-  h2 {
-    margin-bottom: 2rem;
-    color: var(--text-color);
-    text-align: left;
-    
-    &::after {
-      content: '';
-      display: block;
-      width: 50px;
-      height: 3px;
-      background: var(--primary-color);
-      margin-top: 0.5rem;
-    }
-  }
-}
-
-// Section-specific styles
-h2 {
-  color: var(--primary-color);
-  margin-bottom: 2rem;
-  font-size: 2.5rem;
-  position: relative;
-  
-  &:after {
-    content: '';
-    position: absolute;
-    bottom: -0.5rem;
-    left: 0;
-    width: 50px;
-    height: 3px;
-    background: var(--primary-color);
-    border-radius: 2px;
-  }
-}
-
-h3 {
-  color: var(--text-color);
-  margin-bottom: 1rem;
 }
 
 // Navigation
@@ -426,14 +345,14 @@ h3 {
   .progress-bar {
     width: 4px;
     height: 200px;
-    background: var(--border-color);
+    background: var(--v-theme-surface);
     border-radius: 2px;
     overflow: hidden;
   }
 
   .progress {
     width: 100%;
-    background: var(--primary-color);
+    background: var(--v-theme-primary);
     border-radius: 2px;
     transition: height 0.3s ease;
   }
@@ -443,8 +362,8 @@ h3 {
     height: 40px;
     padding: 0;
     border-radius: 50%;
-    background: var(--primary-color);
-    color: var(--background-color);
+    background: var(--v-theme-primary);
+    color: var(--v-theme-on-primary);
     border: none;
     cursor: pointer;
     display: flex;
@@ -456,8 +375,8 @@ h3 {
 
     &:hover:not(:disabled) {
       transform: scale(1.1);
-      background: var(--secondary-color);
-      box-shadow: 0 2px 8px var(--shadow-color);
+      background: var(--v-theme-secondary);
+      box-shadow: 0 2px 8px var(--v-shadow-color);
     }
 
     &:active:not(:disabled) {
@@ -465,38 +384,20 @@ h3 {
     }
 
     &:disabled {
-      background: var(--border-color);
+      background: var(--v-theme-surface);
       cursor: not-allowed;
       opacity: 0.6;
     }
   }
 }
 
-// Slide transitions
-.slide-enter-active,
-.slide-leave-active {
-  transition: all 0.8s ease-in-out;
-}
-
-.slide-enter-from {
-  transform: translateY(100%) rotateZ(5deg);
-  opacity: 0;
-}
-
-.slide-leave-to {
-  transform: translateY(-100%) rotateZ(-5deg);
-  opacity: 0;
-}
-
 // Responsive styles
 @media (max-width: 768px) {
-  .slide.skills-section.fullscreen {
-    padding: 0;
-    
-    .skills h2 {
-      top: 1rem;
-      left: 1rem;
-      font-size: 1.8rem;
+  .slide {
+    padding: 2rem;
+
+    &.skills-section {
+      padding: 1.5rem;
     }
   }
 
@@ -513,30 +414,14 @@ h3 {
       height: 150px;
     }
   }
-
-  .slide {
-    padding: 1rem;
-
-    &.skills-section {
-      padding: 1rem;
-    }
-  }
-
-  .soft-skills-grid,
-  .interests-grid {
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-  }
-
-  h2 {
-    font-size: 2rem;
-  }
 }
 
 @media (max-width: 480px) {
-  .slide.skills-section.fullscreen {
-    .skills h2 {
-      font-size: 1.5rem;
+  .slide {
+    padding: 1.5rem;
+
+    &.skills-section {
+      padding: 1rem;
     }
   }
 
@@ -547,42 +432,31 @@ h3 {
       width: 32px;
       height: 32px;
     }
-  }
 
-  .slide {
-    padding: 0.8rem;
-  }
-
-  h2 {
-    font-size: 1.6rem;
-  }
-
-  .soft-skill-item, 
-  .interest-item {
-    padding: 1.5rem;
+    .progress-bar {
+      height: 120px;
+    }
   }
 }
 
 // Print styles
 @media print {
-  .skills-section.fullscreen {
-    position: relative !important;
-    width: 100% !important;
-    height: auto !important;
-    
-    .skills-container {
-      position: relative !important;
-      height: auto !important;
-      min-height: 500px;
-    }
+  .profile-slider {
+    height: auto;
+    overflow: visible;
+  }
+
+  .slider-container {
+    transform: none !important;
+  }
+
+  .slide {
+    height: auto;
+    page-break-after: always;
   }
 
   .slider-nav {
     display: none;
-  }
-
-  .slide {
-    page-break-after: always;
   }
 }
 </style>

@@ -46,7 +46,7 @@
                 <template v-slot:prepend>
                   <v-icon icon="mdi-email" color="primary" />
                 </template>
-                {{ profileStore.personalInfo.Email }}
+                <span class="email-text">{{ profileStore.personalInfo.Email }}</span>
               </v-list-item>
               
               <v-list-item>
@@ -90,12 +90,12 @@
                 :key="lang" 
                 cols="12" 
                 sm="6"
-                lg="4"
+                md="3"
               >
-                <v-card variant="elevated" class="language-card">
+                <v-card class="language-card">
                   <v-card-item>
-                    <v-card-title>{{ lang }}</v-card-title>
-                    <v-card-subtitle>{{ level }}</v-card-subtitle>
+                    <v-card-title class="language-title">{{ lang }}</v-card-title>
+                    <v-card-subtitle class="mt-1">{{ level }}</v-card-subtitle>
                     <v-card-text>
                       <v-progress-linear
                         :model-value="getLanguageProgress(level)"
@@ -124,24 +124,24 @@
                 cols="12" 
                 sm="6"
               >
-                <v-card variant="elevated" class="book-card">
+                <v-card class="book-card">
                   <v-card-item>
-                    <v-card-title>{{ book.title }}</v-card-title>
-                    <v-card-subtitle>{{ book.author }}</v-card-subtitle>
+                    <v-card-title class="book-title">{{ book.title }}</v-card-title>
+                    <v-card-subtitle class="mt-1">{{ book.author }}</v-card-subtitle>
                     <v-card-text>
-                    <div class="d-flex align-center mt-2">
+                      <div class="d-flex align-center mt-2">
                         <v-icon 
-                        :icon="book.status === 'Completed' ? 'mdi-book-check' : 'mdi-book-open-variant'" 
-                        :color="book.status === 'Completed' ? 'success' : 'primary'" 
-                        class="mr-2" 
+                          :icon="book.status === 'Completed' ? 'mdi-book-check' : 'mdi-book-open-variant'" 
+                          :color="book.status === 'Completed' ? 'success' : 'primary'" 
+                          class="mr-2" 
                         />
                         <v-chip
-                        :color="book.status === 'Completed' ? 'success' : 'primary'"
-                        size="small"
+                          :color="book.status === 'Completed' ? 'success' : 'primary'"
+                          size="small"
                         >
-                        {{ book.status }}
+                          {{ book.status }}
                         </v-chip>
-                    </div>
+                      </div>
                     </v-card-text>
                   </v-card-item>
                 </v-card>
@@ -162,22 +162,23 @@
                 dot-color="primary"
                 size="small"
               >
-                <v-card variant="elevated" class="certificate-card">
+                <v-card class="certificate-card">
                   <v-card-item>
-                    <v-card-title>{{ cert.title }}</v-card-title>
-                    <v-card-subtitle>{{ cert.platform }}</v-card-subtitle>
+                    <v-card-title class="certificate-title">{{ cert.title }}</v-card-title>
+                    <v-card-subtitle class="mt-1">{{ cert.platform }}</v-card-subtitle>
                     <v-card-text>
                       <div class="d-flex align-center mt-2">
                         <v-icon 
-                          :icon="cert.inProgress ? 'mdi-progress-clock' : 'mdi-check-circle'"
-                          :color="cert.inProgress ? 'warning' : 'success'"
+                          icon="mdi-check-circle"
+                          color="success"
                           class="mr-2" 
                         />
                         <v-chip
-                          :color="cert.inProgress ? 'warning' : 'success'"
+                          color="success"
                           size="small"
+                          class="completion-date"
                         >
-                          {{ cert.inProgress ? 'In Progress' : 'Completed' }}
+                          Completed
                         </v-chip>
                       </div>
                     </v-card-text>
@@ -261,148 +262,187 @@ export default defineComponent({
 <style lang="scss" scoped>
 .profile-detail {
   height: 100%;
-}
+  color: #ffffff;  // Base text color set to white
 
-// Left Column Styles
-.summary-col {
-  .summary-card {
-    background: rgba(var(--v-theme-surface), 0.95); // More opaque background
-    border-radius: 16px;
-    padding: 1.5rem;  // Slightly reduced padding
-    text-align: center;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    }
-
-  .summary-avatar {
-    border: 3px solid var(--v-primary-base);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  }
-
-  .quick-social {
-    .v-btn {
-      transition: all 0.3s ease;
-
-      &:hover {
-        transform: translateY(-2px);
-      }
-    }
-  }
-
-  .contact-list {
-  background: transparent;
-  
-  .v-list-item {
-    min-height: 40px;  // Reduced height
-    margin-bottom: 0.4rem;
-    border-radius: 8px;
-    background: rgba(var(--v-theme-surface), 0.95);
-    white-space: nowrap;  // Prevent email wrapping
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-size: 0.9rem;  // Slightly smaller font
-  }
-}
-
-  .specialties-section {
-    margin-top: 2rem;
-    text-align: left;
-
-    .specialty-chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-    }
-  }
-}
-
-// Right Column Styles
-.content-col {
-  .detail-section {
-    margin-bottom: 4rem;
-
-    &:last-child {
-      margin-bottom: 0;
-    }
-
-    .section-header {
-      display: flex;
-      align-items: center;
-      margin-bottom: 1.5rem;
-      padding-bottom: 1rem;
-      border-bottom: 2px solid rgba(var(--v-theme-primary), 0.1);
+  .summary-col {
+    .summary-card {
+      background: var(--v-background-base);
+      border-radius: 16px;
+      padding: 1.5rem;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(var(--v-border-color), 0.1);
+      color: #ffffff;
 
       h3 {
-        margin: 0;
-        font-weight: 500;
+        color: #ffffff;
       }
+
+      p {
+        color: #ffffff;
+      }
+    }
+
+    .quick-social {
+      .v-btn {
+        transition: all 0.3s ease;
+
+        &:hover {
+          transform: translateY(-2px);
+        }
+      }
+    }
+
+    .contact-list {
+      background: transparent;
+      
+      .v-list-item {
+        min-height: 40px;
+        margin-bottom: 0.4rem;
+        border-radius: 8px;
+        background: var(--v-background-base);
+        border: 1px solid rgba(var(--v-border-color), 0.1);
+        color: #ffffff !important;
+
+        .email-text {
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          color: #ffffff;
+        }
+      }
+    }
+
+    .specialties-section {
+      margin-top: 2rem;
+      text-align: left;
+
+      h4 {
+        color: #ffffff;
+      }
+
+      .specialty-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
+    }
+  }
+
+  .content-col {
+    .detail-section {
+      background: var(--v-background-base);
+      border-radius: 12px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(var(--v-border-color), 0.1);
+      color: #ffffff;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      .section-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid var(--v-primary-base);
+
+        h3 {
+          margin: 0;
+          font-weight: 600;
+          color: #ffffff;
+        }
+      }
+    }
+  }
+
+  .language-card,
+  .book-card,
+  .certificate-card {
+    height: 100%;
+    transition: all 0.3s ease;
+    background: var(--v-background-base);
+    border: 1px solid rgba(var(--v-border-color), 0.1);
+    color: #ffffff;
+
+    &:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    }
+
+    .v-card-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      line-height: 1.3;
+      color: #ffffff !important;
+    }
+
+    .v-card-subtitle {
+      font-size: 0.9rem;
+      opacity: 0.8;
+      color: rgba(255, 255, 255, 0.9) !important;
+    }
+
+    .v-card-text {
+      padding-top: 0.5rem;
+      color: #ffffff;
+    }
+  }
+
+  .language-card {
+    .language-title {
+      font-size: 1.2rem;
+      color: #ffffff;
+    }
+  }
+
+  .book-card {
+    .book-title {
+      font-size: 1.1rem;
+      color: #ffffff;
+    }
+  }
+
+  .certificate-card {
+    .certificate-title {
+      font-size: 1rem;
+      color: #ffffff;
+    }
+  }
+
+  .v-timeline {
+    .v-timeline-item {
+      margin-bottom: 1.5rem;
     }
   }
 }
 
-// Card Styles
-.language-card,
-.book-card,
-.certificate-card {
-  .v-card-title {
-    font-size: 1rem;  // Smaller title
-    line-height: 1.3;
-  }
-
-  .v-card-subtitle {
-    font-size: 0.9rem;  // Smaller subtitle
-  }
-
-  .v-card-text {
-    padding-top: 0.5rem;
-  }
-}
-
-// Timeline Styles
-.v-timeline {
-  .v-timeline-item {
-    margin-bottom: 1.5rem;
-  }
-}
-
-// Responsive Styles
 @media (max-width: 960px) {
   .summary-col {
     margin-bottom: 2rem;
   }
 
-  .detail-section {
-    margin-bottom: 3rem;
-
-    .section-header h3 {
-      font-size: 1.4rem;
-    }
+  .content-col .detail-section {
+    padding: 1.5rem;
   }
 }
 
 @media (max-width: 600px) {
-  .summary-card {
-    padding: 1.5rem;
-  }
-
-  .detail-section {
-    margin-bottom: 2rem;
-
+  .content-col .detail-section {
+    padding: 1rem;
+    
     .section-header {
-    h3 {
-        font-size: 1.3rem;  // Smaller section titles
-    }
+      h3 {
+        font-size: 1.2rem;
+      }
 
-    .v-icon {
-        font-size: 24px !important;  // Smaller icons
+      .v-icon {
+        font-size: 24px !important;
+      }
     }
-    }
-  }
-}
-.v-list-item__content {
-  overflow-x: auto;
-  scrollbar-width: none;  // Hide scrollbar in Firefox
-  &::-webkit-scrollbar {
-    display: none;  // Hide scrollbar in Chrome/Safari
   }
 }
 </style>
