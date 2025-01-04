@@ -6,44 +6,48 @@
       <v-btn
         icon
         @click="toggleTheme"
-        :color="isDark ? 'yellow-darken-2' : 'blue-darken-2'"
-        class="theme-btn"
+        class="theme-btn glass-effect"
+        :class="{ 'dark': isDark }"
       >
         <v-icon>{{ isDark ? 'mdi-white-balance-sunny' : 'mdi-moon-waning-crescent' }}</v-icon>
       </v-btn>
 
       <!-- Center - Main Navigation -->
-      <div class="d-flex align-center">
+      <div class="d-flex align-center nav-group">
         <v-btn
           v-for="(item, index) in menuItems"
           :key="index"
-          class="mx-2 game-btn"
-          :class="{ 'active': currentSection === item.value }"
-          @click="handleNavigation(item.value)"
+          class="mx-2 nav-btn glass-effect"
+          disabled
         >
-          <v-icon start>{{ item.icon }}</v-icon>
-          {{ item.title }}
+          <div class="btn-content">
+            <v-icon start class="nav-icon">{{ item.icon }}</v-icon>
+            <span class="nav-text">{{ item.title }}</span>
+          </div>
+          <div class="btn-glow"></div>
         </v-btn>
       </div>
 
       <!-- Right side - Inventory -->
-      <v-menu v-model="inventoryMenu" location="bottom end">
+      <v-menu v-model="inventoryMenu" location="bottom end" transition="scale-transition">
         <template v-slot:activator="{ props }">
           <v-btn
             v-bind="props"
             icon
-            class="inventory-btn"
+            class="inventory-btn glass-effect"
             :class="{ 'active': inventoryMenu }"
           >
             <v-icon>mdi-bag-personal</v-icon>
+            <div class="btn-glow"></div>
           </v-btn>
         </template>
 
-        <v-card class="inventory-panel">
+        <v-card class="inventory-panel glass-effect">
           <v-tabs
             v-model="activeInventoryTab"
             color="primary"
             align-tabs="center"
+            class="tab-header"
           >
             <v-tab value="softskills">Soft Skills</v-tab>
             <v-tab value="interests">Interests</v-tab>
@@ -61,7 +65,7 @@
                           icon
                           size="x-large"
                           :color="skill.color"
-                          class="skill-btn"
+                          class="skill-btn glass-effect"
                         >
                           <v-icon>{{ skill.icon }}</v-icon>
                         </v-btn>
@@ -84,7 +88,7 @@
                           icon
                           size="x-large"
                           :color="interest.color"
-                          class="interest-btn"
+                          class="interest-btn glass-effect"
                         >
                           <v-icon>{{ interest.icon }}</v-icon>
                         </v-btn>
@@ -109,14 +113,7 @@ import { useThemeStore } from '@/stores/theme'
 export default defineComponent({
   name: 'GameHeader',
 
-  props: {
-    currentSection: {
-      type: Number,
-      default: 0
-    }
-  },
-
-  emits: ['navigate', 'theme-transition-start'],
+  emits: ['theme-transition-start'],
 
   setup(props, { emit }) {
     const themeStore = useThemeStore()
@@ -147,10 +144,6 @@ export default defineComponent({
       { name: 'Travel', icon: 'mdi-airplane', color: 'light-blue' },
       { name: 'Photography', icon: 'mdi-camera', color: 'amber' }
     ]
-
-    const handleNavigation = (section) => {
-      emit('navigate', section)
-    }
 
     const createLightningPath = (startX, startY, width, intensity = 1) => {
       const path = []
@@ -210,7 +203,6 @@ export default defineComponent({
       if (isTransitioning.value) return
       isTransitioning.value = true
 
-      // Emit event to start avatar animation immediately
       emit('theme-transition-start')
 
       let container = document.querySelector('.theme-transition-container')
@@ -236,15 +228,13 @@ export default defineComponent({
 
       document.body.classList.add('theme-transition-trembling')
 
-      // Start the theme transition animation
       const maxInitialCoverage = Math.floor(totalBoxes * 0.3)
       let coveredBoxes = new Set()
       
       const numInitialCracks = Math.floor(totalBoxes * 0.1)
       
-      // Phase 1: Initial cracks (0-2250ms)
       for (let i = 0; i < numInitialCracks && coveredBoxes.size < maxInitialCoverage; i++) {
-        const startTime = Math.random() * 2250
+        const startTime = Math.random() * 2000
         setTimeout(() => {
           if (coveredBoxes.size >= maxInitialCoverage) return
           const box = Math.floor(Math.random() * totalBoxes)
@@ -279,7 +269,6 @@ export default defineComponent({
         }, startTime)
       }
 
-      // Phase 2: Rapid spread (2250-2850ms)
       setTimeout(() => {
         const remainingForPhase2 = Math.floor(totalBoxes * 0.6)
         const rapidSpreadDuration = 600
@@ -310,7 +299,6 @@ export default defineComponent({
         }, intervalDelay)
       }, 2250)
 
-      // Phase 3: Final spread and theme switch (2850-3000ms)
       setTimeout(() => {
         document.body.classList.remove('theme-transition-trembling')
         
@@ -318,13 +306,9 @@ export default defineComponent({
         overlay.className = 'theme-overlay'
         container.appendChild(overlay)
 
-        // Switch theme in Vuetify after the animation
         setTimeout(() => {
-          // Apply theme changes simultaneously
           document.body.classList.toggle('dark-theme')
           themeStore.toggleTheme()
-          
-          // Clear animation container
           container.innerHTML = ''
           isTransitioning.value = false
         }, 150)
@@ -338,7 +322,6 @@ export default defineComponent({
       inventoryMenu,
       activeInventoryTab,
       isDark: themeStore.isDark,
-      handleNavigation,
       toggleTheme
     }
   }
@@ -347,61 +330,126 @@ export default defineComponent({
 
 <style lang="scss" scoped>
 .game-header {
-  background: rgba(var(--v-theme-surface-variant), 0.95) !important;
+  background: rgba(var(--v-theme-surface-variant), 0.3) !important;
   backdrop-filter: blur(10px);
-  border-bottom: 2px solid var(--v-theme-primary);
+  border-bottom: 1px solid rgba(var(--v-theme-primary), 0.2);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  border-radius: 0 0 24px 24px;
+  margin: 0 12px;
 }
 
-.game-btn {
+.glass-effect {
+  background: rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+
+  &:not(:disabled):hover {
+    background: rgba(255, 255, 255, 0.15) !important;
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+  }
+}
+
+.nav-btn {
   position: relative;
   min-width: 120px;
   height: 48px;
   padding: 0 20px;
-  border: 2px solid var(--v-theme-primary);
-  background: rgba(var(--v-theme-surface), 0.9) !important;
-  color: var(--v-theme-primary) !important;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  transition: all 0.3s ease;
+  overflow: hidden;
+  opacity: 0.8;
 
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    background: rgba(var(--v-theme-primary), 0.1) !important;
+  &:disabled {
+    opacity: 0.8 !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+    cursor: default;
+    pointer-events: none;
+  }
+  
+  .btn-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    z-index: 1;
   }
 
-  &.active {
-    background: var(--v-theme-primary) !important;
-    color: var(--v-theme-on-primary) !important;
+  .nav-icon {
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
+    opacity: 0.9;
   }
 
-  .v-icon {
-    margin-right: 8px;
+  .nav-text {
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    opacity: 0.9;
+  }
+
+  .btn-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(
+      circle at center,
+      rgba(var(--v-theme-primary), 0.3) 0%,
+      transparent 70%
+    );
+    transform: translate(-50%, -50%) scale(0);
+    transition: transform 0.5s ease;
+    pointer-events: none;
   }
 }
 
 .theme-btn, .inventory-btn {
   width: 48px;
   height: 48px;
-  border: 2px solid currentColor;
-  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  z-index: 2;
 
   &:hover {
     transform: rotate(15deg);
   }
 
   &.active {
-    background: var(--v-theme-primary) !important;
-    color: var(--v-theme-on-primary) !important;
+    background: rgba(var(--v-theme-primary), 0.2) !important;
+    border-color: rgba(var(--v-theme-primary), 0.5);
+  }
+
+  .btn-glow {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      circle at center,
+      rgba(var(--v-theme-primary), 0.3),
+      transparent 70%
+    );
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  &:hover .btn-glow {
+    opacity: 1;
   }
 }
 
 .inventory-panel {
   width: 320px;
-  border: 2px solid var(--v-theme-primary);
+  border: 1px solid rgba(var(--v-theme-primary), 0.2);
   background: rgba(var(--v-theme-surface), 0.95) !important;
-  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  overflow: hidden;
+
+  .tab-header {
+    background: rgba(var(--v-theme-surface-variant), 0.1);
+    border-bottom: 1px solid rgba(var(--v-theme-primary), 0.1);
+  }
 }
 
 .inventory-grid {
@@ -418,25 +466,26 @@ export default defineComponent({
 }
 
 .skill-btn, .interest-btn {
-  border: 2px solid currentColor;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.1) !important;
 
   &:hover {
     transform: scale(1.1);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
   }
 }
 
 @media (max-width: 768px) {
-  .game-btn {
+  .nav-btn {
     min-width: auto;
     padding: 0 12px;
 
-    .v-btn__content span {
+    .nav-text {
       display: none;
     }
 
-    .v-icon {
+    .nav-icon {
       margin-right: 0;
     }
   }
