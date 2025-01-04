@@ -9,13 +9,7 @@
         'blurred': isProfileExpanded || isSolutionExpanded 
       }"
     >
-      <ThreeDAvatar 
-        ref="avatar"
-        :current-section="currentSection"
-        :position="isAvatarRight ? 'right' : 'left'"
-        @animation-complete="handleAnimationComplete"
-        @theme-change="handleThemeChange"
-      />
+      <!-- Avatar is now handled in App.vue -->
     </div>
     <div 
       class="main-content" 
@@ -91,7 +85,6 @@
 import { defineComponent } from 'vue'
 import { useThemeStore } from '@/stores/theme'
 import ProfileSlider from '@/components/ProfileSlider.vue'
-import ThreeDAvatar from '@/components/ThreeDAvatar.vue'
 import ProfileDetail from '@/components/ProfileDetail.vue'
 import SolutionDetail from '@/components/SolutionDetail.vue'
 
@@ -100,10 +93,11 @@ export default defineComponent({
   
   components: {
     ProfileSlider,
-    ThreeDAvatar,
     ProfileDetail,
     SolutionDetail
   },
+
+  emits: ['section-change', 'animation-start', 'animation-complete'],
   
   setup() {
     const themeStore = useThemeStore()
@@ -142,31 +136,25 @@ export default defineComponent({
   methods: {
     handleSectionChange(section) {
       this.currentSection = section
+      this.$emit('section-change', section)
     },
     
     handleAnimationStart(event) {
       this.isAnimating = true
-      if (this.$refs.avatar) {
-        this.$refs.avatar.handleAnimationEvent(event)
-      }
+      this.$emit('animation-start', event)
     },
     
     handleAnimationComplete() {
       this.isAnimating = false
+      this.$emit('animation-complete')
     },
     
     handleFullscreenChange(isFullscreen) {
       this.isSkillTreeFullscreen = isFullscreen
     },
-    
-    handleThemeChange() {
-      this.themeStore.toggleTheme()
-    },
 
     handleProfileExpand(expanded) {
       this.isProfileExpanded = expanded
-      
-      // Close other overlays if opening profile
       if (expanded) {
         this.isSolutionExpanded = false
         this.selectedSolution = null
@@ -176,8 +164,6 @@ export default defineComponent({
     handleSolutionExpand({ expanded, solution }) {
       this.isSolutionExpanded = expanded
       this.selectedSolution = expanded ? solution : null
-      
-      // Close other overlays if opening solution
       if (expanded) {
         this.isProfileExpanded = false
       }

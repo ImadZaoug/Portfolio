@@ -1,3 +1,4 @@
+# frontend/src/components/PersonalProfile.vue
 <template>
   <v-card class="profile-card" elevation="4">
     <v-container class="fill-height pa-0">
@@ -16,25 +17,25 @@
           <v-btn
             href="https://www.linkedin.com/in/imad-zaoug/"
             target="_blank"
-            class="social-btn"
+            class="social-btn linkedin-btn"
             :color="'#0077B5'"
             elevation="2"
           >
             <div class="d-flex align-center">
-              <v-icon icon="mdi-linkedin" size="24" class="mr-2" color="white" />
-              <span class="white--text">LinkedIn Profile</span>
+              <i class="fa-brands fa-linkedin fa-bounce mr-2"></i>
+              <span>LinkedIn Profile</span>
             </div>
           </v-btn>
           <v-btn
             href="https://github.com/ImadZaoug"
             target="_blank"
-            class="social-btn"
+            class="social-btn github-btn"
             :color="'#24292E'"
             elevation="2"
           >
             <div class="d-flex align-center">
-              <v-icon icon="mdi-github" size="24" class="mr-2" color="white" />
-              <span class="white--text">Github Profile</span>
+              <i class="fa-brands fa-github fa-bounce mr-2"></i>
+              <span>Github Profile</span>
             </div>
           </v-btn>
         </div>
@@ -73,8 +74,8 @@
           size="x-large"
           elevation="3"
         >
-          <v-icon icon="mdi-account-details" class="mr-2" />
-          View Full Profile
+          <v-icon icon="mdi-account-details" class="mr-2 force-white" color="white" />
+          <span class="force-white">View Full Profile</span>
         </v-btn>
       </div>
     </v-container>
@@ -122,8 +123,12 @@ export default defineComponent({
     color: rgba(255, 255, 255, 0.87) !important;
   }
   
-  .v-icon {
+  .v-icon:not(.force-white) {
     color: #48D597 !important;
+  }
+
+  .force-white {
+    color: white !important;
   }
 }
 
@@ -137,8 +142,12 @@ export default defineComponent({
     color: rgba(0, 0, 0, 0.87) !important;
   }
   
-  .v-icon {
+  .v-icon:not(.force-white) {
     color: var(--v-theme-primary) !important;
+  }
+
+  .force-white {
+    color: white !important;
   }
 }
 
@@ -207,14 +216,40 @@ export default defineComponent({
   .social-btn {
     min-width: 160px;
     height: 42px;
-    color: white !important;
     position: relative;
     transition: all 0.3s ease;
     font-weight: 400;
 
     &:hover {
       transform: translateY(-2px);
+      background-color: white !important;
       opacity: 0.9;
+
+      span, i {
+        color: #24292E;
+      }
+    }
+
+    span, i {
+      color: white;
+      font-size: 1.1rem;
+    }
+
+    &.linkedin-btn:hover {
+      span, i {
+        color: #0077B5;
+      }
+    }
+
+    &.github-btn:hover {
+      span, i {
+        color: #24292E;
+      }
+    }
+
+    i {
+      font-size: 1.4rem;
+      margin-right: 8px;
     }
   }
 }
