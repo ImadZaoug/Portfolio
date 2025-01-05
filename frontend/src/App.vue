@@ -1,18 +1,25 @@
 # frontend/src/App.vue
 <template>
   <v-app :theme="theme">
+    <!-- Header -->
     <GameHeader 
       :current-section="currentSection"
       @navigate="handleNavigation"
       @theme-transition-start="handleThemeTransitionStart"
+      @inventory-expand="handleInventoryExpand"
     />
+
+    <!-- Main Content -->
     <v-main>
       <HomeView 
+        ref="homeView"
         @animation-start="handleAnimationStart"
         @animation-complete="handleAnimationComplete"
         @section-change="handleSectionChange"
       />
     </v-main>
+
+    <!-- Avatar -->
     <ThreeDAvatar 
       ref="avatar"
       :current-section="currentSection"
@@ -43,6 +50,7 @@ export default {
     const currentSection = ref(0)
     const avatar = ref(null)
     const isAnimating = ref(false)
+    const homeView = ref(null)
     
     onMounted(() => {
       themeStore.initializeTheme()
@@ -73,15 +81,23 @@ export default {
       currentSection.value = section
     }
 
+    const handleInventoryExpand = (expanded) => {
+      if (homeView.value) {
+        homeView.value.handleInventoryExpand(expanded)
+      }
+    }
+
     return {
       theme: computed(() => themeStore.isDark ? 'dark' : 'light'),
       currentSection,
       avatar,
+      homeView,
       handleNavigation,
       handleThemeTransitionStart,
       handleAnimationStart,
       handleAnimationComplete,
-      handleSectionChange
+      handleSectionChange,
+      handleInventoryExpand
     }
   }
 }
@@ -90,10 +106,10 @@ export default {
 <style lang="scss">
 .v-application {
   background: transparent !important;
-}
 
-.v-main {
-  background: transparent !important;
+  .v-main {
+    background: transparent !important;
+  }
 }
 
 :root {
@@ -164,6 +180,13 @@ export default {
   .v-icon {
     color: var(--v-theme-primary) !important;
   }
+
+  /* Inventory specific overrides for dark theme */
+  .inventory-detail-card,
+  .inventory-detail-card .v-card-text {
+    background-color: white !important;
+    color: var(--v-theme-on-surface) !important;
+  }
 }
 
 .v-theme--light {
@@ -176,5 +199,101 @@ export default {
   .v-icon {
     color: var(--v-theme-primary) !important;
   }
+}
+
+/* Theme transition container */
+.theme-transition-container {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  pointer-events: none;
+}
+
+/* Trembling effect */
+.theme-transition-trembling {
+  animation: tremble 0.1s infinite;
+}
+
+@keyframes tremble {
+  0% { transform: translate(0, 0); }
+  25% { transform: translate(1px, 1px); }
+  50% { transform: translate(-1px, -1px); }
+  75% { transform: translate(-1px, 1px); }
+  100% { transform: translate(1px, -1px); }
+}
+
+/* Theme overlay */
+.theme-overlay {
+  position: absolute;
+  inset: 0;
+  background: var(--v-theme-background);
+  opacity: 0;
+  animation: fadeIn 0.15s ease forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Global overlay styles */
+.overlay-base {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(10px);
+}
+
+/* Global card styles */
+.detail-card-base {
+  width: 90%;
+  height: 90%;
+  max-width: 1600px;
+  background: white !important;
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Animation transitions */
+.expand-transition-enter-active,
+.expand-transition-leave-active {
+  transition: all 0.3s ease;
+
+  .overlay-content {
+    transition: all 0.3s ease;
+  }
+}
+
+.expand-transition-enter-from,
+.expand-transition-leave-to {
+  opacity: 0;
+
+  .overlay-content {
+    transform: scale(0.95);
+  }
+}
+.v-tooltip {
+  z-index: 9999999 !important;
+}
+
+.v-overlay__content {
+  z-index: 999999 !important;
+}
+
+/* Override Vuetify's default tooltip styles */
+:deep(.v-tooltip > .v-overlay__content) {
+  background: white !important;
+  color: rgba(0, 0, 0, 0.87) !important;
+  border: 1px solid var(--v-theme-primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 8px 12px;
+  font-size: 0.875rem;
+  z-index: 9999999 !important;
 }
 </style>

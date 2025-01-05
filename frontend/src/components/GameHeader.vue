@@ -29,79 +29,14 @@
       </div>
 
       <!-- Right side - Inventory -->
-      <v-menu v-model="inventoryMenu" location="bottom end" transition="scale-transition">
-        <template v-slot:activator="{ props }">
-          <v-btn
-            v-bind="props"
-            icon
-            class="inventory-btn glass-effect"
-            :class="{ 'active': inventoryMenu }"
-          >
-            <v-icon>mdi-bag-personal</v-icon>
-            <div class="btn-glow"></div>
-          </v-btn>
-        </template>
-
-        <v-card class="inventory-panel glass-effect">
-          <v-tabs
-            v-model="activeInventoryTab"
-            color="primary"
-            align-tabs="center"
-            class="tab-header"
-          >
-            <v-tab value="softskills">Soft Skills</v-tab>
-            <v-tab value="interests">Interests</v-tab>
-          </v-tabs>
-
-          <v-window v-model="activeInventoryTab">
-            <v-window-item value="softskills">
-              <v-card-text>
-                <div class="inventory-grid">
-                  <div v-for="(skill, index) in softSkills" :key="index" class="inventory-item">
-                    <v-tooltip location="bottom">
-                      <template v-slot:activator="{ props }">
-                        <v-btn
-                          v-bind="props"
-                          icon
-                          size="x-large"
-                          :color="skill.color"
-                          class="skill-btn glass-effect"
-                        >
-                          <v-icon>{{ skill.icon }}</v-icon>
-                        </v-btn>
-                      </template>
-                      {{ skill.name }}
-                    </v-tooltip>
-                  </div>
-                </div>
-              </v-card-text>
-            </v-window-item>
-
-            <v-window-item value="interests">
-              <v-card-text>
-                <div class="inventory-grid">
-                  <div v-for="(interest, index) in interests" :key="index" class="inventory-item">
-                    <v-tooltip location="bottom">
-                      <template v-slot:activator="{ props }">
-                        <v-btn
-                          v-bind="props"
-                          icon
-                          size="x-large"
-                          :color="interest.color"
-                          class="interest-btn glass-effect"
-                        >
-                          <v-icon>{{ interest.icon }}</v-icon>
-                        </v-btn>
-                      </template>
-                      {{ interest.name }}
-                    </v-tooltip>
-                  </div>
-                </div>
-              </v-card-text>
-            </v-window-item>
-          </v-window>
-        </v-card>
-      </v-menu>
+      <v-btn
+        icon
+        class="inventory-btn glass-effect"
+        @click="handleInventoryClick"
+      >
+        <v-icon>mdi-bag-personal</v-icon>
+        <div class="btn-glow"></div>
+      </v-btn>
     </div>
   </v-app-bar>
 </template>
@@ -113,13 +48,11 @@ import { useThemeStore } from '@/stores/theme'
 export default defineComponent({
   name: 'GameHeader',
 
-  emits: ['theme-transition-start'],
+  emits: ['theme-transition-start', 'inventory-expand'],
 
   setup(props, { emit }) {
     const themeStore = useThemeStore()
     const isTransitioning = ref(false)
-    const inventoryMenu = ref(false)
-    const activeInventoryTab = ref('softskills')
 
     const menuItems = [
       { title: 'Game Mode', icon: 'mdi-gamepad-variant', value: 0 },
@@ -127,23 +60,9 @@ export default defineComponent({
       { title: 'Skills', icon: 'mdi-sword-cross', value: 2 }
     ]
 
-    const softSkills = [
-      { name: 'Leadership', icon: 'mdi-account-group', color: 'blue' },
-      { name: 'Communication', icon: 'mdi-message-text', color: 'green' },
-      { name: 'Problem Solving', icon: 'mdi-puzzle', color: 'purple' },
-      { name: 'Teamwork', icon: 'mdi-account-multiple', color: 'orange' },
-      { name: 'Adaptability', icon: 'mdi-rotate-3d-variant', color: 'cyan' },
-      { name: 'Time Management', icon: 'mdi-clock-time-four', color: 'pink' }
-    ]
-
-    const interests = [
-      { name: 'Gaming', icon: 'mdi-controller', color: 'deep-purple' },
-      { name: 'Technology', icon: 'mdi-laptop', color: 'blue-grey' },
-      { name: 'Reading', icon: 'mdi-book-open-page-variant', color: 'brown' },
-      { name: 'Music', icon: 'mdi-music', color: 'red' },
-      { name: 'Travel', icon: 'mdi-airplane', color: 'light-blue' },
-      { name: 'Photography', icon: 'mdi-camera', color: 'amber' }
-    ]
+    const handleInventoryClick = () => {
+      emit('inventory-expand', true)
+    }
 
     const createLightningPath = (startX, startY, width, intensity = 1) => {
       const path = []
@@ -317,12 +236,9 @@ export default defineComponent({
 
     return {
       menuItems,
-      softSkills,
-      interests,
-      inventoryMenu,
-      activeInventoryTab,
       isDark: themeStore.isDark,
-      toggleTheme
+      toggleTheme,
+      handleInventoryClick
     }
   }
 })
@@ -439,43 +355,6 @@ export default defineComponent({
   }
 }
 
-.inventory-panel {
-  width: 320px;
-  border: 1px solid rgba(var(--v-theme-primary), 0.2);
-  background: rgba(var(--v-theme-surface), 0.95) !important;
-  border-radius: 16px;
-  overflow: hidden;
-
-  .tab-header {
-    background: rgba(var(--v-theme-surface-variant), 0.1);
-    border-bottom: 1px solid rgba(var(--v-theme-primary), 0.1);
-  }
-}
-
-.inventory-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  padding: 16px;
-}
-
-.inventory-item {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.skill-btn, .interest-btn {
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  transition: all 0.3s ease;
-  background: rgba(255, 255, 255, 0.1) !important;
-
-  &:hover {
-    transform: scale(1.1);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-  }
-}
-
 @media (max-width: 768px) {
   .nav-btn {
     min-width: auto;
@@ -488,6 +367,16 @@ export default defineComponent({
     .nav-icon {
       margin-right: 0;
     }
+  }
+}
+
+@media (max-width: 576px) {
+  .game-header {
+    margin: 0 6px;
+  }
+
+  .nav-group {
+    gap: 0.5rem;
   }
 }
 </style>

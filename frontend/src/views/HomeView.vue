@@ -6,7 +6,7 @@
       class="avatar-sidebar" 
       :class="{ 
         'avatar-right': isAvatarRight, 
-        'blurred': isProfileExpanded || isSolutionExpanded 
+        'blurred': isProfileExpanded || isSolutionExpanded || isInventoryExpanded
       }"
     >
       <!-- Avatar is now handled in App.vue -->
@@ -15,7 +15,7 @@
       class="main-content" 
       :class="{ 
         'content-left': isAvatarRight, 
-        'blurred': isProfileExpanded || isSolutionExpanded 
+        'blurred': isProfileExpanded || isSolutionExpanded || isInventoryExpanded
       }"
     >
       <ProfileSlider 
@@ -25,17 +25,17 @@
         @fullscreen-change="handleFullscreenChange"
         @solution-expand="handleSolutionExpand"
         :is-fullscreen="isSkillTreeFullscreen"
-        :disabled="isAnimating || isProfileExpanded || isSolutionExpanded"
+        :disabled="isAnimating || isProfileExpanded || isSolutionExpanded || isInventoryExpanded"
         @profile-expand="handleProfileExpand"
         :is-solution-expanded="isSolutionExpanded"
       />
     </div>
 
     <!-- Full Profile Overlay -->
-    <transition name="profile-expand">
-      <div v-if="isProfileExpanded" class="profile-overlay" @click="handleProfileExpand(false)">
+    <transition name="overlay">
+      <div v-if="isProfileExpanded" class="overlay-base profile-overlay" @click="handleProfileExpand(false)">
         <div class="overlay-content" @click.stop>
-          <v-card class="profile-detail-card">
+          <v-card class="detail-card profile-detail-card">
             <v-card-title class="d-flex justify-space-between align-center pa-6">
               <h2 class="text-h4">Complete Profile</h2>
               <v-btn 
@@ -55,6 +55,30 @@
       </div>
     </transition>
 
+    <!-- Inventory Overlay -->
+    <transition name="overlay">
+      <div v-if="isInventoryExpanded" class="overlay-base inventory-overlay" @click="handleInventoryExpand(false)">
+        <div class="overlay-content" @click.stop>
+          <v-card class="detail-card inventory-detail-card">
+            <v-card-title class="d-flex justify-space-between align-center pa-6">
+              <h2 class="text-h4">Character Inventory</h2>
+              <v-btn 
+                icon="mdi-close" 
+                variant="text" 
+                size="large" 
+                @click="handleInventoryExpand(false)" 
+                class="close-btn"
+              />
+            </v-card-title>
+            <v-divider />
+            <v-card-text class="pa-6">
+              <InventoryDetails />
+            </v-card-text>
+          </v-card>
+        </div>
+      </div>
+    </transition>
+
     <!-- Solution Detail Overlay -->
     <SolutionDetail
       v-if="isSolutionExpanded"
@@ -63,12 +87,12 @@
     />
 
     <!-- Skills Tree Overlay -->
-    <transition name="skills-expand">
+    <transition name="overlay">
       <div 
         v-if="isSkillTreeFullscreen" 
-        class="skills-fullscreen-overlay"
+        class="overlay-base skills-overlay"
       >
-        <div class="skills-fullscreen-content">
+        <div class="overlay-content">
           <ProfileSlider 
             :is-fullscreen="true"
             :initial-section="4"
@@ -87,6 +111,7 @@ import { useThemeStore } from '@/stores/theme'
 import ProfileSlider from '@/components/ProfileSlider.vue'
 import ProfileDetail from '@/components/ProfileDetail.vue'
 import SolutionDetail from '@/components/SolutionDetail.vue'
+import InventoryDetails from '@/components/InventoryDetails.vue'
 
 export default defineComponent({
   name: 'HomeView',
@@ -94,7 +119,8 @@ export default defineComponent({
   components: {
     ProfileSlider,
     ProfileDetail,
-    SolutionDetail
+    SolutionDetail,
+    InventoryDetails
   },
 
   emits: ['section-change', 'animation-start', 'animation-complete'],
@@ -110,6 +136,7 @@ export default defineComponent({
       isAnimating: false,
       isSkillTreeFullscreen: false,
       isProfileExpanded: false,
+      isInventoryExpanded: false,
       isSolutionExpanded: false,
       selectedSolution: null
     }
@@ -123,6 +150,9 @@ export default defineComponent({
   
   watch: {
     isProfileExpanded(newVal) {
+      document.body.style.overflow = newVal ? 'hidden' : ''
+    },
+    isInventoryExpanded(newVal) {
       document.body.style.overflow = newVal ? 'hidden' : ''
     },
     isSkillTreeFullscreen(newVal) {
@@ -157,6 +187,16 @@ export default defineComponent({
       this.isProfileExpanded = expanded
       if (expanded) {
         this.isSolutionExpanded = false
+        this.isInventoryExpanded = false
+        this.selectedSolution = null
+      }
+    },
+
+    handleInventoryExpand(expanded) {
+      this.isInventoryExpanded = expanded
+      if (expanded) {
+        this.isProfileExpanded = false
+        this.isSolutionExpanded = false
         this.selectedSolution = null
       }
     },
@@ -166,6 +206,7 @@ export default defineComponent({
       this.selectedSolution = expanded ? solution : null
       if (expanded) {
         this.isProfileExpanded = false
+        this.isInventoryExpanded = false
       }
     }
   },
@@ -226,8 +267,8 @@ export default defineComponent({
   }
 }
 
-// Profile Overlay
-.profile-overlay {
+// Base overlay styles
+.overlay-base {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.7);
@@ -248,18 +289,42 @@ export default defineComponent({
   transition: transform 0.3s ease-in-out;
 }
 
-.profile-detail-card {
+// Card styles
+.detail-card {
   height: 100%;
   display: flex;
   flex-direction: column;
   border-radius: 16px;
   overflow: hidden;
-  background: var(--v-theme-background);
+
+  &.profile-detail-card {
+    background: transparent !important;
+
+    .v-card-text {
+      background: transparent !important;
+    }
+  }
+
+  &.inventory-detail-card {
+    background: white !important;
+
+    .v-card-text {
+      background: white !important;
+      color: rgba(0, 0, 0, 0.87) !important;
+    }
+
+    // Dark theme override
+    .theme--dark & {
+      .v-card-title {
+        background: rgb(40, 40, 40);
+        color: white;
+      }
+    }
+  }
 
   .v-card-text {
     flex: 1;
     overflow-y: auto;
-    color: var(--v-theme-on-surface) !important;
     
     &::-webkit-scrollbar {
       width: 8px;
@@ -279,18 +344,6 @@ export default defineComponent({
       }
     }
   }
-
-  :deep(.v-theme--dark) {
-    .text-h4 {
-      color: var(--v-theme-primary) !important;
-    }
-  }
-
-  :deep(.v-theme--light) {
-    .text-h4 {
-      color: var(--v-theme-primary) !important;
-    }
-  }
 }
 
 .close-btn {
@@ -302,29 +355,9 @@ export default defineComponent({
   }
 }
 
-// Skills Overlay
-.skills-fullscreen-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.85);
-  z-index: 99998;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.skills-fullscreen-content {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-// Profile Expand Animation
-.profile-expand-enter-active,
-.profile-expand-leave-active {
+// Animation
+.overlay-enter-active,
+.overlay-leave-active {
   transition: all 0.3s ease;
 
   .overlay-content {
@@ -332,24 +365,13 @@ export default defineComponent({
   }
 }
 
-.profile-expand-enter-from,
-.profile-expand-leave-to {
+.overlay-enter-from,
+.overlay-leave-to {
   opacity: 0;
 
   .overlay-content {
     transform: scale(0.95);
   }
-}
-
-// Skills Expand Animation
-.skills-expand-enter-active,
-.skills-expand-leave-active {
-  transition: all 0.3s ease;
-}
-
-.skills-expand-enter-from,
-.skills-expand-leave-to {
-  opacity: 0;
 }
 
 // Responsive styles
@@ -358,7 +380,7 @@ export default defineComponent({
     width: 180px;
   }
 
-  .profile-overlay {
+  .overlay-base {
     padding: 1.5rem;
   }
 }
@@ -372,7 +394,7 @@ export default defineComponent({
     padding: 0 1.5rem;
   }
 
-  .profile-overlay {
+  .overlay-base {
     padding: 1rem;
   }
 }
@@ -386,7 +408,7 @@ export default defineComponent({
     padding: 0 1rem;
   }
 
-  .profile-overlay {
+  .overlay-base {
     padding: 0.5rem;
   }
 
@@ -405,7 +427,7 @@ export default defineComponent({
     padding: 0 0.5rem;
   }
 
-  .profile-overlay {
+  .overlay-base {
     padding: 0;
   }
 
@@ -414,7 +436,7 @@ export default defineComponent({
     height: 100%;
   }
 
-  .profile-detail-card {
+  .detail-card {
     border-radius: 0;
   }
 }
@@ -434,8 +456,7 @@ export default defineComponent({
     padding: 2rem;
   }
 
-  .profile-overlay,
-  .skills-fullscreen-overlay {
+  .overlay-base {
     display: none;
   }
 
