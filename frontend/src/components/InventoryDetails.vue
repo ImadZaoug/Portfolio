@@ -518,7 +518,7 @@ export default defineComponent({
   z-index: 3;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translate(calc(-50% - 10px), -50%);
   background: transparent;
 }
 
@@ -655,12 +655,16 @@ export default defineComponent({
   width: 450px;
   display: flex;
   flex-direction: column;
-  background: white;
+  background: rgb(255, 255, 255); // Light theme
   border-radius: 16px;
   padding: 0.75rem;
-  height: 100%; // Add this to ensure it takes full height
-}
+  height: 100%;
+  transition: background-color 0.3s ease;
 
+  .theme--dark & {
+    background: rgb(30, 30, 30) !important; // Dark theme
+  }
+}
 
 .inventory-card {
   flex: 1;
@@ -669,7 +673,31 @@ export default defineComponent({
   border-radius: 12px;
   overflow: hidden;
   box-shadow: none !important;
-  height: 100%; // Changed from max-height to ensure it takes full space
+  height: 100%;
+  background: rgb(255, 255, 255) !important; // Light theme
+  transition: background-color 0.3s ease;
+
+  .theme--dark & {
+    background: rgb(30, 30, 30) !important; // Dark theme
+    color: rgb(255, 255, 255, 0.87) !important;
+  }
+
+  .v-tabs {
+    .theme--dark & {
+      background: rgb(30, 30, 30) !important;
+      color: rgb(255, 255, 255, 0.87) !important;
+    }
+  }
+
+  .v-card-text {
+    background: rgb(255, 255, 255) !important; // Light theme
+    color: rgba(0, 0, 0, 0.87) !important;
+
+    .theme--dark & {
+      background: rgb(30, 30, 30) !important; // Dark theme
+      color: rgba(255, 255, 255, 0.87) !important;
+    }
+  }
 
   .v-card-text {
     flex: 1;

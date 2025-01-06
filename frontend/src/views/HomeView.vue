@@ -1,6 +1,6 @@
 # frontend/src/views/HomeView.vue
 <template>
-  <div class="home">
+  <div class="home" :class="{ 'theme--dark': isDark }">
     <!-- Main Content -->
     <div 
       class="avatar-sidebar" 
@@ -35,7 +35,7 @@
     <transition name="overlay">
       <div v-if="isProfileExpanded" class="overlay-base profile-overlay" @click="handleProfileExpand(false)">
         <div class="overlay-content" @click.stop>
-          <v-card class="detail-card profile-detail-card">
+          <v-card class="detail-card profile-detail-card" :class="{ 'theme--dark': isDark }">
             <v-card-title class="d-flex justify-space-between align-center pa-6">
               <h2 class="text-h4">Complete Profile</h2>
               <v-btn 
@@ -59,7 +59,7 @@
     <transition name="overlay">
       <div v-if="isInventoryExpanded" class="overlay-base inventory-overlay" @click="handleInventoryExpand(false)">
         <div class="overlay-content" @click.stop>
-          <v-card class="detail-card inventory-detail-card">
+          <v-card class="detail-card inventory-detail-card" :class="{ 'theme--dark': isDark }">
             <v-card-title class="d-flex justify-space-between align-center pa-6">
               <h2 class="text-h4">Character Inventory</h2>
               <v-btn 
@@ -71,7 +71,7 @@
               />
             </v-card-title>
             <!-- Rarity Legend with original styling -->
-            <div class="rarity-legend">
+            <div class="rarity-legend" :class="{ 'theme--dark': isDark }">
               <div class="legend-title">Skill Grades:</div>
               <div class="legend-items">
                 <div class="legend-item common">
@@ -128,7 +128,7 @@
 </template>
 
 <script>
-import { defineComponent } from 'vue'
+import { defineComponent, computed } from 'vue'
 import { useThemeStore } from '@/stores/theme'
 import ProfileSlider from '@/components/ProfileSlider.vue'
 import ProfileDetail from '@/components/ProfileDetail.vue'
@@ -149,7 +149,10 @@ export default defineComponent({
   
   setup() {
     const themeStore = useThemeStore()
-    return { themeStore }
+    return { 
+      themeStore,
+      isDark: computed(() => themeStore.isDark)
+    }
   },
   
   data() {
@@ -289,77 +292,6 @@ export default defineComponent({
   }
 }
 
-// Rarity Legend styles
-.rarity-legend {
-  position: relative;
-  z-index: 1;
-  margin: 0.25rem 1rem;
-  padding: 0.25rem 0.75rem;
-  background: var(--v-theme-surface);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  height: 28px;
-  gap: 0.5rem;
-
-  .theme--dark & {
-    background: rgba(40, 40, 40, 0.7);
-  }
-
-  .legend-title {
-    font-weight: 500;
-    font-size: 0.85rem;
-    white-space: nowrap;
-  }
-
-  .legend-items {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-    align-items: center;
-  }
-
-  .legend-item {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.15rem 0.5rem;
-    border-radius: 20px;
-    background: rgba(255, 255, 255, 0.9);
-    font-size: 0.8rem;
-
-    .theme--dark & {
-      background: rgba(50, 50, 50, 0.9);
-    }
-
-    .color-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-    }
-
-    &.common .color-dot {
-      background: linear-gradient(45deg, #C0C0C0, #A8A8A8);
-    }
-
-    &.rare .color-dot {
-      background: linear-gradient(45deg, #9C27B0, #7B1FA2);
-      box-shadow: 0 0 5px rgba(156, 39, 176, 0.3);
-    }
-
-    &.legendary .color-dot {
-      background: linear-gradient(45deg, #FFD700, #FFA500);
-      box-shadow: 0 0 5px rgba(255, 215, 0, 0.4);
-    }
-
-    &.mythical .color-dot {
-      background: #000;
-      box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
-      animation: mythicalPulse 2s infinite;
-    }
-  }
-}
-
 // Base overlay styles
 .overlay-base {
   position: fixed;
@@ -390,7 +322,7 @@ export default defineComponent({
   }
 }
 
-// Card styles
+// Card styles with updated dark mode
 .detail-card {
   width: 100%;
   height: 100%;
@@ -398,66 +330,15 @@ export default defineComponent({
   flex-direction: column;
   border-radius: 16px;
   overflow: hidden;
-
-  &.inventory-detail-card {
-    background: rgb(255, 255, 255) !important;
-
-    .v-card-title {
-      padding: 0.5rem 1.25rem !important;
-      min-height: 48px;
-
-      h2 {
-        font-size: 1.25rem;
-        margin: 0;
-      }
-    }
-
-    .v-card-text {
-      background: rgb(255, 255, 255) !important;
-      color: rgba(0, 0, 0, 0.87) !important;
-      overflow-y: auto;
-      padding: 0.75rem;
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-
-      &::-webkit-scrollbar {
-        width: 8px;
-      }
-      
-      &::-webkit-scrollbar-track {
-        background: rgba(var(--v-theme-on-surface), 0.1);
-        border-radius: 4px;
-      }
-      
-      &::-webkit-scrollbar-thumb {
-        background: var(--v-theme-primary);
-        border-radius: 4px;
-        
-        &:hover {
-          background: var(--v-theme-secondary);
-        }
-      }
-    }
-
-    // Dark theme override
-    .theme--dark & {
-      background: rgb(18, 18, 18) !important;
-      
-      .v-card-title {
-        background: rgb(18, 18, 18);
-        color: white;
-      }
-
-      .v-card-text {
-        background: rgb(18, 18, 18) !important;
-        color: white !important;
-      }
-    }
-  }
-
+  
   &.profile-detail-card {
-    background: transparent !important;
+    background: var(--v-theme-surface) !important;
+    color: var(--v-theme-on-surface);
+
+    &.theme--dark {
+      background: rgb(30, 30, 30) !important;
+      color: rgba(255, 255, 255, 0.87);
+    }
 
     .v-card-text {
       background: transparent !important;
@@ -484,18 +365,66 @@ export default defineComponent({
     }
   }
 
-  .v-card-title {
-    background: var(--v-theme-background);
-    color: var(--v-theme-on-background);
-    border-bottom: 1px solid var(--v-theme-border-color);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+  &.inventory-detail-card {
+    background: white !important; // Force white background in light mode
+    color: rgba(0, 0, 0, 0.87) !important; // Force dark text in light mode
 
-    .theme--dark & {
-      background: rgb(30, 30, 30);
-      color: white;
-      border-color: rgba(255, 255, 255, 0.12);
+    &.theme--dark {
+      background: rgb(30, 30, 30) !important; // Force dark background in dark mode
+      color: rgba(255, 255, 255, 0.87) !important; // Force light text in dark mode
+
+      .v-card-title {
+        background: rgb(30, 30, 30) !important;
+        color: rgba(255, 255, 255, 0.87) !important;
+        border-color: rgba(255, 255, 255, 0.12);
+      }
+
+      .v-card-text {
+        background: rgb(30, 30, 30) !important;
+        color: rgba(255, 255, 255, 0.87) !important;
+      }
+    }
+    
+    .v-card-title {
+      padding: 0.5rem 1.25rem !important;
+      min-height: 48px;
+      background: var(--v-theme-surface);
+      color: var(--v-theme-on-surface);
+      border-bottom: 1px solid var(--v-theme-border-color);
+
+      h2 {
+        font-size: 1.25rem;
+        margin: 0;
+        color: var(--v-theme-on-surface);
+      }
+    }
+
+    .v-card-text {
+      background: var(--v-theme-surface) !important;
+      color: var(--v-theme-on-surface) !important;
+      overflow-y: auto;
+      padding: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+
+      &::-webkit-scrollbar {
+        width: 8px;
+      }
+      
+      &::-webkit-scrollbar-track {
+        background: rgba(var(--v-theme-on-surface), 0.1);
+        border-radius: 4px;
+      }
+      
+      &::-webkit-scrollbar-thumb {
+        background: var(--v-theme-primary);
+        border-radius: 4px;
+        
+        &:hover {
+          background: var(--v-theme-secondary);
+        }
+      }
     }
   }
 
@@ -506,6 +435,115 @@ export default defineComponent({
     &:hover {
       transform: rotate(90deg);
     }
+  }
+}
+
+// Rarity Legend styles
+.rarity-legend {
+  position: relative;
+  z-index: 1;
+  margin: 0.25rem 1rem;
+  padding: 0.25rem 0.75rem;
+  background: var(--v-theme-surface);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  height: 28px;
+  gap: 0.5rem;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+
+  &.theme--dark {
+    background: rgba(40, 40, 40, 0.7);
+    color: rgba(255, 255, 255, 0.87);
+    border-color: rgba(255, 255, 255, 0.1);
+
+    .legend-item {
+      background: rgba(50, 50, 50, 0.9);
+      color: rgba(255, 255, 255, 0.87);
+      border-color: rgba(255, 255, 255, 0.1);
+    }
+  }
+
+  .legend-title {
+    font-weight: 500;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    color: inherit;
+  }
+
+  .legend-items {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.9);
+    font-size: 0.8rem;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+
+    span {
+      color: inherit;
+    }
+
+    .color-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    &.common .color-dot {
+      background: linear-gradient(45deg, #C0C0C0, #A8A8A8);
+    }
+
+    &.rare .color-dot {
+      background: linear-gradient(45deg, #9C27B0, #7B1FA2);
+      box-shadow: 0 0 5px rgba(156, 39, 176, 0.3);
+    }
+
+    &.legendary .color-dot {
+      background: linear-gradient(45deg, #FFD700, #FFA500);
+      box-shadow: 0 0 5px rgba(255, 215, 0, 0.4);
+    }
+
+    &.mythical .color-dot {
+      background: #000;
+      box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+      animation: mythicalPulse 2s infinite;
+    }
+  }
+}
+
+// Animation keyframes
+@keyframes mythicalPulse {
+  0% { box-shadow: 0 0 5px rgba(0, 0, 0, 0.5); }
+  50% { box-shadow: 0 0 8px rgba(0, 0, 0, 0.7); }
+  100% { box-shadow: 0 0 5px rgba(0, 0, 0, 0.5); }
+}
+
+// Transition animations
+.overlay-enter-active,
+.overlay-leave-active {
+  transition: all 0.3s ease;
+
+  .overlay-content {
+    transition: all 0.3s ease;
+  }
+}
+
+.overlay-enter-from,
+.overlay-leave-to {
+  opacity: 0;
+
+  .overlay-content {
+    transform: scale(0.95);
   }
 }
 
@@ -558,32 +596,6 @@ export default defineComponent({
   }
 }
 
-// Animation keyframes
-@keyframes mythicalPulse {
-  0% { box-shadow: 0 0 5px rgba(0, 0, 0, 0.5); }
-  50% { box-shadow: 0 0 8px rgba(0, 0, 0, 0.7); }
-  100% { box-shadow: 0 0 5px rgba(0, 0, 0, 0.5); }
-}
-
-// Transition animations
-.overlay-enter-active,
-.overlay-leave-active {
-  transition: all 0.3s ease;
-
-  .overlay-content {
-    transition: all 0.3s ease;
-  }
-}
-
-.overlay-enter-from,
-.overlay-leave-to {
-  opacity: 0;
-
-  .overlay-content {
-    transform: scale(0.95);
-  }
-}
-
 // Responsive styles
 @media (max-width: 1200px) {
   .overlay-base {
@@ -598,6 +610,17 @@ export default defineComponent({
   .equipment-slot .slot-container {
     width: 52px;
     height: 52px;
+  }
+
+  .rarity-legend {
+    height: auto;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0.5rem 0.75rem;
+
+    .legend-items {
+      width: 100%;
+    }
   }
 }
 
@@ -645,6 +668,10 @@ export default defineComponent({
 
   .detail-card {
     border-radius: 0;
+  }
+
+  .rarity-legend {
+    margin: 0.25rem 0.5rem;
   }
 }
 
