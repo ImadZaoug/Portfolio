@@ -9,30 +9,50 @@
 
       <!-- Scrollable grid container -->
       <div class="solutions-grid-container">
-        <!-- Industrial Projects Section -->
+        <!-- 3D Projects Section -->
         <div class="project-section">
-          <h2 class="section-title">Industrial Collaboration Projects</h2>
-          <p class="section-description">Advanced 3D simulation and modeling projects developed in collaboration with industry partners</p>
+          <h2 class="section-title">Featured Projects</h2>
+          <p class="section-description">Advanced simulation and visualization projects</p>
           
           <div class="solutions-grid">
             <div 
-              v-for="solution in industrialProjects" 
-              :key="solution.id"
+              v-for="project in projectsStore.getThreeDProjects" 
+              :key="project.id"
               class="solution-wrapper"
             >
               <div 
                 class="solution-card"
-                @click="handleSolutionClick(solution)"
+                @click="handleSolutionClick(project)"
               >
                 <div class="solution-content">
                   <div class="jar-container">
                     <component 
-                      :is="getSolutionComponent(solution.type)"
+                      :is="getSolutionComponent(project.type)"
                     />
                   </div>
                   <div class="solution-info">
-                    <h3>{{ solution.title }}</h3>
-                    <p>{{ solution.shortDesc }}</p>
+                    <h3>{{ project.title }}</h3>
+                    <p>{{ project.shortDesc }}</p>
+                    <div class="project-links" v-if="project.links">
+                      <v-btn
+                        v-if="project.links.github"
+                        :href="project.links.github"
+                        target="_blank"
+                        icon="mdi-github"
+                        variant="text"
+                        size="small"
+                        class="link-btn"
+                      />
+                      <v-btn
+                        v-if="project.links.huggingface"
+                        :href="project.links.huggingface"
+                        target="_blank"
+                        icon="mdi-brain"
+                        variant="text"
+                        size="small"
+                        class="link-btn"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -40,30 +60,41 @@
           </div>
         </div>
 
-        <!-- Personal Projects Section -->
+        <!-- Other Projects Section -->
         <div class="project-section">
-          <h2 class="section-title">Personal Innovation Projects</h2>
-          <p class="section-description">Self-initiated projects exploring business ideas and technical concepts</p>
+          <h2 class="section-title">Additional Projects</h2>
+          <p class="section-description">Academic and professional development initiatives</p>
           
           <div class="solutions-grid">
             <div 
-              v-for="solution in personalProjects" 
-              :key="solution.id"
+              v-for="project in projectsStore.getOtherProjects" 
+              :key="project.id"
               class="solution-wrapper"
             >
               <div 
                 class="solution-card"
-                @click="handleSolutionClick(solution)"
+                @click="handleSolutionClick(project)"
               >
                 <div class="solution-content">
                   <div class="jar-container">
                     <component 
-                      :is="getSolutionComponent(solution.type)"
+                      :is="getSolutionComponent(project.type)"
                     />
                   </div>
                   <div class="solution-info">
-                    <h3>{{ solution.title }}</h3>
-                    <p>{{ solution.shortDesc }}</p>
+                    <h3>{{ project.title }}</h3>
+                    <p>{{ project.shortDesc }}</p>
+                    <div class="project-links" v-if="project.links">
+                      <v-btn
+                        v-if="project.links.github"
+                        :href="project.links.github"
+                        target="_blank"
+                        icon="mdi-github"
+                        variant="text"
+                        size="small"
+                        class="link-btn"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -76,7 +107,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { useProjectsStore } from '@/stores/projects';
 import BubblingSolution from './solutions/BubblingSolution.vue';
 import PulsingSolution from './solutions/PulsingSolution.vue';
 import ReactiveSolution from './solutions/ReactiveSolution.vue';
@@ -89,6 +120,8 @@ import FreezingSolution from './solutions/FreezingSolution.vue';
 import LaserSolution from './solutions/LaserSolution.vue';
 import VortexSolution from './solutions/VortexSolution.vue';
 
+const projectsStore = useProjectsStore();
+
 /* eslint-disable no-undef */
 const props = defineProps({
   isExpanded: {
@@ -99,102 +132,6 @@ const props = defineProps({
 
 const emit = defineEmits(['solution-expand']);
 /* eslint-enable no-undef */
-
-// Industrial (3D) Projects
-const industrialProjects = ref([
-  {
-    id: 1,
-    title: "Molecular Dynamics Simulator",
-    type: "testTube",
-    shortDesc: "Chemical reaction simulation system",
-    fullDesc: "Advanced molecular dynamics simulation platform for modeling chemical reactions and molecular interactions. Features real-time visualization of atomic interactions, energy calculations, and configurable environmental parameters.",
-    technologies: ["CUDA", "OpenGL", "C++", "Python"]
-  },
-  {
-    id: 2,
-    title: "Chain Reaction Engine",
-    type: "chain",
-    shortDesc: "Complex reaction simulation platform",
-    fullDesc: "Sophisticated simulation engine for modeling chain reactions and complex molecular interactions. Features real-time visualization of reaction pathways and energy transfer mechanisms.",
-    technologies: ["Three.js", "WebGL", "GLSL", "Web Workers"]
-  },
-  {
-    id: 3,
-    title: "Diffusion Analysis System",
-    type: "diffusion",
-    shortDesc: "Particle diffusion visualization",
-    fullDesc: "Advanced system for analyzing and visualizing particle diffusion in various mediums. Includes real-time tracking and statistical analysis of diffusion patterns.",
-    technologies: ["Three.js", "WebGL", "Python", "TensorFlow"]
-  },
-  {
-    id: 4,
-    title: "Phase Transition Analyzer",
-    type: "freezing",
-    shortDesc: "Phase change simulation platform",
-    fullDesc: "Comprehensive simulation platform for studying phase transitions in materials. Features temperature-dependent behavior analysis and crystallization pattern prediction.",
-    technologies: ["CUDA", "C++", "Python", "OpenGL"]
-  },
-  {
-    id: 5,
-    title: "Laser Interaction Simulator",
-    type: "laser",
-    shortDesc: "Laser-matter interaction modeling",
-    fullDesc: "High-precision simulator for modeling laser interactions with various materials. Includes heat transfer analysis and ablation effect predictions.",
-    technologies: ["CUDA", "OpenGL", "Python", "NumPy"]
-  },
-  {
-    id: 6,
-    title: "Fluid Dynamics Engine",
-    type: "vortex",
-    shortDesc: "Advanced fluid simulation system",
-    fullDesc: "State-of-the-art fluid dynamics simulation engine supporting various flow regimes and boundary conditions. Features real-time visualization of complex flow patterns.",
-    technologies: ["OpenGL", "C++", "CUDA", "Python"]
-  }
-]);
-
-// Personal Innovation Projects
-const personalProjects = ref([
-  {
-    id: 7,
-    title: "Data Analysis Engine",
-    type: "bubbling",
-    shortDesc: "Advanced data processing pipeline",
-    fullDesc: "A sophisticated data analysis engine built with Python and Vue.js, featuring real-time processing capabilities and interactive visualizations. The system processes large datasets efficiently and provides intuitive visual representations of complex data patterns.",
-    technologies: ["Python", "Vue.js", "D3.js", "Flask"]
-  },
-  {
-    id: 8,
-    title: "AI Model Trainer",
-    type: "pulsing",
-    shortDesc: "Machine learning model training platform",
-    fullDesc: "An intuitive platform for training and evaluating machine learning models, with support for various algorithms and datasets. Features include automated hyperparameter tuning, real-time performance metrics, and interactive model exploration tools.",
-    technologies: ["TensorFlow", "Scikit-learn", "Vue.js", "FastAPI"]
-  },
-  {
-    id: 9,
-    title: "Neural Network Visualizer",
-    type: "reactive",
-    shortDesc: "Interactive neural network visualization",
-    fullDesc: "A real-time visualization tool for neural networks, allowing users to understand and interact with different network architectures. The system provides dynamic visualization of network layers, weights, and activation patterns during training and inference.",
-    technologies: ["Three.js", "Vue.js", "WebGL", "Python"]
-  },
-  {
-    id: 10,
-    title: "Database Schema Crystallizer",
-    type: "crystallizing",
-    shortDesc: "Dynamic database optimization system",
-    fullDesc: "An innovative database schema optimization tool that analyzes query patterns and data relationships to automatically suggest and implement optimal database structures. Features real-time performance monitoring and automated index management.",
-    technologies: ["PostgreSQL", "TypeScript", "GraphQL", "Redis"]
-  },
-  {
-    id: 11,
-    title: "Microservices Orchestrator",
-    type: "circulating",
-    shortDesc: "Cloud service management platform",
-    fullDesc: "A comprehensive microservices management platform that handles service discovery, load balancing, and automated scaling. Provides real-time monitoring, intelligent routing, and self-healing capabilities for distributed systems.",
-    technologies: ["Kubernetes", "Docker", "Node.js", "Prometheus"]
-  }
-]);
 
 const getSolutionComponent = (type) => {
   switch (type) {
@@ -736,6 +673,21 @@ const handleSolutionClick = (solution) => {
   .solution-card {
     box-shadow: none;
     border: 1px solid #ddd;
+  }
+}
+
+.project-links {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  
+  .link-btn {
+    opacity: 0.7;
+    transition: opacity 0.3s ease;
+    
+    &:hover {
+      opacity: 1;
+    }
   }
 }
 </style>

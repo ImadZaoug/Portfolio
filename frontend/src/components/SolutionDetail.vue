@@ -1,3 +1,4 @@
+// frontend/src/components/SolutionDetail.vue
 <template>
   <transition name="solution-expand">
     <div v-if="props.solution" class="solution-overlay" @click="handleClose">
@@ -15,7 +16,37 @@
         <!-- Details Section -->
         <div class="details-section">
           <div class="header">
-            <h2 class="title">{{ props.solution.title }}</h2>
+            <div class="title-section">
+              <h2 class="title">{{ props.solution.title }}</h2>
+              <p v-if="props.solution.context" class="context">{{ props.solution.context }}</p>
+              
+              <!-- Project Links -->
+              <div class="project-links" v-if="props.solution.links">
+                <v-btn
+                  v-if="props.solution.links.github"
+                  :href="props.solution.links.github"
+                  target="_blank"
+                  color="white"
+                  variant="outlined"
+                  prepend-icon="mdi-github"
+                  class="link-btn"
+                >
+                  GitHub
+                </v-btn>
+                <v-btn
+                  v-if="props.solution.links.huggingface"
+                  :href="props.solution.links.huggingface"
+                  target="_blank"
+                  color="white"
+                  variant="outlined"
+                  prepend-icon="mdi-brain"
+                  class="link-btn"
+                >
+                  Hugging Face
+                </v-btn>
+              </div>
+            </div>
+            
             <v-btn 
               icon="mdi-close" 
               variant="text" 
@@ -25,8 +56,15 @@
               color="white"
             />
           </div>
+          
           <div class="content">
+            <!-- Status badge if available -->
+            <div v-if="props.solution.status" class="status-badge" :class="props.solution.status.toLowerCase().replace(' ', '-')">
+              {{ props.solution.status }}
+            </div>
+            
             <p class="description">{{ props.solution.fullDesc }}</p>
+            
             <div class="tech-stack">
               <h3>Technologies Used</h3>
               <div class="tech-chips">
@@ -118,7 +156,6 @@ const getSolutionComponent = (type) => {
   color: white;
 }
 
-// Solution Preview Section
 .solution-preview {
   width: 200px;
   display: flex;
@@ -140,7 +177,6 @@ const getSolutionComponent = (type) => {
   }
 }
 
-// Details Section
 .details-section {
   flex: 1;
   display: flex;
@@ -151,14 +187,33 @@ const getSolutionComponent = (type) => {
   .header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     margin-bottom: 2rem;
 
-    .title {
-      font-size: 2.5rem;
-      font-weight: 600;
-      margin: 0;
-      color: white;
+    .title-section {
+      .title {
+        font-size: 2.5rem;
+        font-weight: 600;
+        margin: 0;
+        color: white;
+      }
+
+      .context {
+        font-size: 1.1rem;
+        opacity: 0.8;
+        margin: 0.5rem 0;
+      }
+
+      .project-links {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1rem;
+
+        .link-btn {
+          text-transform: none;
+          letter-spacing: 0.5px;
+        }
+      }
     }
   }
 
@@ -182,6 +237,20 @@ const getSolutionComponent = (type) => {
       
       &:hover {
         background: rgba(255, 255, 255, 0.3);
+      }
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 0.4rem 1rem;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      margin-bottom: 1rem;
+      
+      &.in-progress {
+        background: rgba(255, 193, 7, 0.2);
+        color: #ffc107;
       }
     }
 
@@ -209,6 +278,8 @@ const getSolutionComponent = (type) => {
 }
 
 .close-btn {
+  transition: transform 0.3s ease;
+  
   &:hover {
     transform: rotate(90deg);
   }
@@ -263,17 +334,16 @@ const getSolutionComponent = (type) => {
   }
 
   .solution-preview {
-    width: 200px;
-    height: 200px;
+    width: 150px;
+    height: 150px;
   }
 
   .details-section {
     width: 100%;
     max-width: none;
 
-          .header .title {
+    .header .title-section .title {
       font-size: 2rem;
-      color: white;
     }
   }
 }
@@ -290,17 +360,31 @@ const getSolutionComponent = (type) => {
   }
 
   .solution-preview {
-    width: 150px;
-    height: 150px;
+    width: 120px;
+    height: 120px;
   }
 
   .details-section {
-    .header .title {
-      font-size: 1.5rem;
+    .header {
+      .title-section {
+        .title {
+          font-size: 1.5rem;
+        }
+        
+        .context {
+          font-size: 1rem;
+        }
+        
+        .project-links {
+          flex-wrap: wrap;
+        }
+      }
     }
 
-    .content .description {
-      font-size: 1rem;
+    .content {
+      .description {
+        font-size: 1rem;
+      }
     }
   }
 }

@@ -28,7 +28,7 @@
     position: relative;
     z-index: 10;
   
-    .theme--dark & {
+    .v-theme--dark & {  // Changed from .theme--dark to .v-theme--dark
       background: rgba(40, 40, 40, 0.98) !important;
       border-color: rgba(255, 255, 255, 0.1);
     }
