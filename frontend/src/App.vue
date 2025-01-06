@@ -7,6 +7,7 @@
       @navigate="handleNavigation"
       @theme-transition-start="handleThemeTransitionStart"
       @inventory-expand="handleInventoryExpand"
+      @skills-expand="handleSkillsExpand"
     />
 
     <!-- Main Content -->
@@ -16,6 +17,8 @@
         @animation-start="handleAnimationStart"
         @animation-complete="handleAnimationComplete"
         @section-change="handleSectionChange"
+        :is-skills-expanded="isSkillsExpanded"
+        @skills-expand="handleSkillsExpand"
       />
     </v-main>
 
@@ -26,15 +29,48 @@
       :position="currentSection % 2 === 1 ? 'right' : 'left'"
       @animation-complete="handleAnimationComplete"
     />
+
+    <!-- Skills Overlay -->
+    <transition name="expand-transition">
+      <div v-if="isSkillsExpanded" class="overlay-base skills-overlay" @click="handleSkillsExpand(false)">
+        <div class="overlay-content" @click.stop>
+          <v-card class="detail-card skills-detail-card" :class="{ 'theme--dark': isDark }">
+            <v-card-title class="d-flex justify-space-between align-center">
+              <h2>Skills Tree</h2>
+              <v-btn 
+                icon="mdi-close" 
+                variant="text" 
+                size="large" 
+                @click="handleSkillsExpand(false)" 
+                class="close-btn"
+              />
+            </v-card-title>
+            <v-divider />
+            <v-card-text>
+              <SkillTree 
+                :initial-skills="skillsStore.technicalSkills"
+                :available-points="skillsStore.availablePoints"
+                :max-points="skillsStore.maxPoints"
+                @unlock-skill="handleSkillUnlock"
+                :is-fullscreen="false"
+                @fullscreen-change="handleSkillTreeFullscreen"
+              />
+            </v-card-text>
+          </v-card>
+        </div>
+      </div>
+    </transition>
   </v-app>
 </template>
 
 <script>
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useThemeStore } from '@/stores/theme'
+import { useSkillsStore } from '@/stores/skills'
 import GameHeader from '@/components/GameHeader.vue'
 import ThreeDAvatar from '@/components/ThreeDAvatar.vue'
 import HomeView from '@/views/HomeView.vue'
+import SkillTree from '@/components/SkillTree.vue'
 
 export default {
   name: 'App',
@@ -42,19 +78,33 @@ export default {
   components: {
     GameHeader,
     ThreeDAvatar,
-    HomeView
+    HomeView,
+    SkillTree
   },
   
   setup() {
     const themeStore = useThemeStore()
+    const skillsStore = useSkillsStore()
     const currentSection = ref(0)
     const avatar = ref(null)
     const isAnimating = ref(false)
     const homeView = ref(null)
+    const isSkillsExpanded = ref(false)
     
     onMounted(() => {
       themeStore.initializeTheme()
+      document.addEventListener('fullscreenchange', handleFullscreenChange)
     })
+
+    onUnmounted(() => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange)
+    })
+
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement && isSkillsExpanded.value) {
+        document.body.style.overflow = 'hidden'
+      }
+    }
 
     const handleNavigation = (section) => {
       currentSection.value = section
@@ -84,6 +134,33 @@ export default {
     const handleInventoryExpand = (expanded) => {
       if (homeView.value) {
         homeView.value.handleInventoryExpand(expanded)
+        if (expanded) {
+          isSkillsExpanded.value = false
+        }
+      }
+    }
+
+    const handleSkillsExpand = (expanded) => {
+      isSkillsExpanded.value = expanded
+      if (expanded) {
+        if (homeView.value && homeView.value.handleInventoryExpand) {
+          homeView.value.handleInventoryExpand(false)
+        }
+        document.body.style.overflow = 'hidden'
+      } else {
+        if (!document.fullscreenElement) {
+          document.body.style.overflow = ''
+        }
+      }
+    }
+
+    const handleSkillUnlock = (skillId) => {
+      skillsStore.unlockSkill(skillId)
+    }
+
+    const handleSkillTreeFullscreen = (isFullscreen) => {
+      if (!isFullscreen && document.fullscreenElement) {
+        document.exitFullscreen()
       }
     }
 
@@ -92,12 +169,17 @@ export default {
       currentSection,
       avatar,
       homeView,
+      isSkillsExpanded,
+      skillsStore,
       handleNavigation,
       handleThemeTransitionStart,
       handleAnimationStart,
       handleAnimationComplete,
       handleSectionChange,
-      handleInventoryExpand
+      handleInventoryExpand,
+      handleSkillsExpand,
+      handleSkillUnlock,
+      handleSkillTreeFullscreen
     }
   }
 }
@@ -181,10 +263,12 @@ export default {
     color: var(--v-theme-primary) !important;
   }
 
-  /* Inventory specific overrides for dark theme */
+  /* Inventory and Skills specific overrides for dark theme */
   .inventory-detail-card,
-  .inventory-detail-card .v-card-text {
-    background-color: white !important;
+  .skills-detail-card,
+  .inventory-detail-card .v-card-text,
+  .skills-detail-card .v-card-text {
+    background-color: var(--v-theme-surface) !important;
     color: var(--v-theme-on-surface) !important;
   }
 }
@@ -246,6 +330,7 @@ export default {
   justify-content: center;
   background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(10px);
+  padding: 1rem;
 }
 
 /* Global card styles */
@@ -278,6 +363,7 @@ export default {
     transform: scale(0.95);
   }
 }
+
 .v-tooltip {
   z-index: 9999999 !important;
 }
@@ -296,4 +382,147 @@ export default {
   font-size: 0.875rem;
   z-index: 9999999 !important;
 }
-</style>
+
+/* Skills overlay specific styles */
+.skills-overlay {
+  .overlay-content {
+    width: 98%;
+    height: 98%;
+    max-width: 1800px;
+    position: relative;
+    transform-origin: center;
+    transition: transform 0.3s ease-in-out;
+    display: flex;
+    overflow: visible;
+  }
+
+  .skills-detail-card {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    border-radius: 16px;
+    overflow: hidden;
+    background: var(--v-theme-surface) !important;
+
+    .v-card-title {
+      padding: 0.5rem 1.25rem !important;
+      min-height: 48px;
+      background: var(--v-theme-surface);
+      color: var(--v-theme-on-surface);
+      border-bottom: 1px solid var(--v-theme-border-color);
+
+      h2 {
+        font-size: 1.25rem;
+        margin: 0;
+        color: var(--v-theme-on-surface);
+      }
+    }
+
+    .v-card-text {
+      padding: 0.75rem !important;
+      overflow: hidden;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--v-theme-surface) !important;
+      color: var(--v-theme-on-surface) !important;
+
+      .skill-tree-wrapper {
+        flex: 1;
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+        background: radial-gradient(circle at center, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.95) 100%);
+        border-radius: 12px;
+        
+        &.fullscreen {
+          position: fixed !important;
+          top: 0;
+          left: 0;
+          width: 100vw !important;
+          height: 100vh !important;
+          z-index: 100000;
+          border-radius: 0;
+        }
+      }
+    }
+
+    .close-btn {
+      transition: transform 0.3s ease;
+      color: var(--v-theme-on-surface) !important;
+
+      &:hover {
+        transform: rotate(90deg);
+      }
+    }
+
+    &.theme--dark {
+      background: rgb(30, 30, 30) !important;
+      color: rgba(255, 255, 255, 0.87) !important;
+
+      .v-card-title {
+        background: rgb(30, 30, 30) !important;
+        color: rgba(255, 255, 255, 0.87) !important;
+        border-color: rgba(255, 255, 255, 0.12);
+      }
+
+      .v-card-text {
+        background: rgb(30, 30, 30) !important;
+        color: rgba(255, 255, 255, 0.87) !important;
+      }
+    }
+  }
+}
+
+/* Media queries */
+@media (max-width: 768px) {
+  .skills-overlay {
+    padding: 0.25rem;
+
+    .skills-detail-card {
+      .v-card-text {
+        padding: 0.5rem !important;
+      }
+    }
+  }
+}
+
+@media (max-width: 576px) {
+  .skills-overlay {
+    padding: 0;
+
+    .overlay-content {
+      width: 100%;
+      height: 100%;
+    }
+
+    .skills-detail-card {
+      border-radius: 0;
+      
+      .v-card-text {
+        padding: 0.25rem !important;
+      }
+    }
+  }
+}
+
+/* Print styles */
+@media print {
+  .skills-overlay {
+    position: relative;
+    background: none;
+    padding: 0;
+
+    .skills-detail-card {
+      box-shadow: none !important;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+
+      .skill-tree-wrapper {
+        page-break-inside: avoid;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+      }
+    }
+  }
+}</style>

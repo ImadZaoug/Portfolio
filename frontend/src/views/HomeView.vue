@@ -6,7 +6,7 @@
       class="avatar-sidebar" 
       :class="{ 
         'avatar-right': isAvatarRight, 
-        'blurred': isProfileExpanded || isSolutionExpanded || isInventoryExpanded
+        'blurred': isProfileExpanded || isSolutionExpanded || isInventoryExpanded || isSkillsExpanded
       }"
     >
       <!-- Avatar is now handled in App.vue -->
@@ -15,20 +15,45 @@
       class="main-content" 
       :class="{ 
         'content-left': isAvatarRight, 
-        'blurred': isProfileExpanded || isSolutionExpanded || isInventoryExpanded
+        'blurred': isProfileExpanded || isSolutionExpanded || isInventoryExpanded || isSkillsExpanded
       }"
     >
       <ProfileSlider 
         @section-change="handleSectionChange"
         @animation-start="handleAnimationStart"
         @animation-complete="handleAnimationComplete"
-        @fullscreen-change="handleFullscreenChange"
-        @solution-expand="handleSolutionExpand"
-        :is-fullscreen="isSkillTreeFullscreen"
-        :disabled="isAnimating || isProfileExpanded || isSolutionExpanded || isInventoryExpanded"
+        :disabled="isAnimating || isProfileExpanded || isSolutionExpanded || isInventoryExpanded || isSkillsExpanded"
         @profile-expand="handleProfileExpand"
+        @solution-expand="handleSolutionExpand"
         :is-solution-expanded="isSolutionExpanded"
+        ref="profileSlider"
       />
+    </div>
+
+    <!-- Navigation Controls -->
+    <div 
+      class="slider-nav"
+      v-show="!isSolutionExpanded && !isProfileExpanded && !isInventoryExpanded && !isSkillsExpanded"
+    >
+      <div class="progress-bar">
+        <div class="progress" 
+             :style="{ height: `${(currentSection / 2) * 100}%` }">
+        </div>
+      </div>
+      <button 
+        @click="handlePrevSection" 
+        :disabled="isAnimating || currentSection === 0"
+        class="nav-button prev-button"
+      >
+        <v-icon>mdi-chevron-up</v-icon>
+      </button>
+      <button 
+        @click="handleNextSection" 
+        :disabled="isAnimating || currentSection === 2"
+        class="nav-button next-button"
+      >
+        <v-icon>mdi-chevron-down</v-icon>
+      </button>
     </div>
 
     <!-- Full Profile Overlay -->
@@ -70,7 +95,7 @@
                 class="close-btn"
               />
             </v-card-title>
-            <!-- Rarity Legend with original styling -->
+            <!-- Rarity Legend -->
             <div class="rarity-legend" :class="{ 'theme--dark': isDark }">
               <div class="legend-title">Skill Grades:</div>
               <div class="legend-items">
@@ -107,28 +132,11 @@
       :solution="selectedSolution"
       @close="handleSolutionExpand({ expanded: false })"
     />
-
-    <!-- Skills Tree Overlay -->
-    <transition name="overlay">
-      <div 
-        v-if="isSkillTreeFullscreen" 
-        class="overlay-base skills-overlay"
-      >
-        <div class="overlay-content">
-          <ProfileSlider 
-            :is-fullscreen="true"
-            :initial-section="4"
-            :disable-navigation="true"
-            @fullscreen-change="handleFullscreenChange"
-          />
-        </div>
-      </div>
-    </transition>
   </div>
 </template>
 
 <script>
-import { defineComponent, computed } from 'vue'
+import { defineComponent, computed, ref } from 'vue'
 import { useThemeStore } from '@/stores/theme'
 import ProfileSlider from '@/components/ProfileSlider.vue'
 import ProfileDetail from '@/components/ProfileDetail.vue'
@@ -144,14 +152,24 @@ export default defineComponent({
     SolutionDetail,
     InventoryDetails
   },
+  
+  props: {
+    isSkillsExpanded: {
+      type: Boolean,
+      default: false
+    }
+  },
 
-  emits: ['section-change', 'animation-start', 'animation-complete'],
+  emits: ['section-change', 'animation-start', 'animation-complete', 'skills-expand'],
   
   setup() {
     const themeStore = useThemeStore()
+    const profileSlider = ref(null)
+    
     return { 
       themeStore,
-      isDark: computed(() => themeStore.isDark)
+      isDark: computed(() => themeStore.isDark),
+      profileSlider
     }
   },
   
@@ -159,7 +177,6 @@ export default defineComponent({
     return {
       currentSection: 0,
       isAnimating: false,
-      isSkillTreeFullscreen: false,
       isProfileExpanded: false,
       isInventoryExpanded: false,
       isSolutionExpanded: false,
@@ -173,22 +190,19 @@ export default defineComponent({
     }
   },
   
-  watch: {
-    isProfileExpanded(newVal) {
-      document.body.style.overflow = newVal ? 'hidden' : ''
-    },
-    isInventoryExpanded(newVal) {
-      document.body.style.overflow = newVal ? 'hidden' : ''
-    },
-    isSkillTreeFullscreen(newVal) {
-      document.body.style.overflow = newVal ? 'hidden' : ''
-    },
-    isSolutionExpanded(newVal) {
-      document.body.style.overflow = newVal ? 'hidden' : ''
-    }
-  },
-  
   methods: {
+    handlePrevSection() {
+      if (this.profileSlider && !this.isAnimating) {
+        this.profileSlider.handlePrevSlide()
+      }
+    },
+
+    handleNextSection() {
+      if (this.profileSlider && !this.isAnimating) {
+        this.profileSlider.handleNextSlide()
+      }
+    },
+
     handleSectionChange(section) {
       this.currentSection = section
       this.$emit('section-change', section)
@@ -203,10 +217,6 @@ export default defineComponent({
       this.isAnimating = false
       this.$emit('animation-complete')
     },
-    
-    handleFullscreenChange(isFullscreen) {
-      this.isSkillTreeFullscreen = isFullscreen
-    },
 
     handleProfileExpand(expanded) {
       this.isProfileExpanded = expanded
@@ -214,6 +224,7 @@ export default defineComponent({
         this.isSolutionExpanded = false
         this.isInventoryExpanded = false
         this.selectedSolution = null
+        this.$emit('skills-expand', false)
       }
     },
 
@@ -223,6 +234,7 @@ export default defineComponent({
         this.isProfileExpanded = false
         this.isSolutionExpanded = false
         this.selectedSolution = null
+        this.$emit('skills-expand', false)
       }
     },
 
@@ -232,12 +244,9 @@ export default defineComponent({
       if (expanded) {
         this.isProfileExpanded = false
         this.isInventoryExpanded = false
+        this.$emit('skills-expand', false)
       }
     }
-  },
-  
-  beforeUnmount() {
-    document.body.style.overflow = ''
   }
 })
 </script>
@@ -292,6 +301,86 @@ export default defineComponent({
   }
 }
 
+// Navigation styles
+.slider-nav {
+  position: fixed;
+  left: 2rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  z-index: 10;
+
+  .progress-bar {
+    width: 4px;
+    height: 200px;
+    background: var(--v-theme-surface);
+    border-radius: 2px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  .progress {
+    width: 100%;
+    background: var(--v-theme-primary);
+    border-radius: 2px;
+    transition: height 0.3s ease;
+    box-shadow: 0 0 10px var(--v-theme-primary);
+  }
+
+  .nav-button {
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border-radius: 50%;
+    background: var(--v-theme-primary);
+    color: var(--v-theme-on-primary);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    transition: all 0.3s ease;
+    will-change: transform;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+
+    &:hover:not(:disabled) {
+      transform: scale(1.1);
+      background: var(--v-theme-secondary);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    &:active:not(:disabled) {
+      transform: scale(0.95);
+    }
+
+    &:disabled {
+      background: var(--v-theme-surface);
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    &:not(:disabled) {
+      animation: pulse 2s infinite;
+    }
+  }
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  }
+  50% {
+    box-shadow: 0 4px 25px var(--v-theme-primary);
+  }
+  100% {
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  }
+}
+
 // Base overlay styles
 .overlay-base {
   position: fixed;
@@ -315,7 +404,8 @@ export default defineComponent({
   }
 
   &.profile-overlay,
-  &.inventory-overlay {
+  &.inventory-overlay,
+  &.skills-overlay {
     .overlay-content {
       overflow: visible;
     }
@@ -366,12 +456,12 @@ export default defineComponent({
   }
 
   &.inventory-detail-card {
-    background: white !important; // Force white background in light mode
-    color: rgba(0, 0, 0, 0.87) !important; // Force dark text in light mode
+    background: white !important;
+    color: rgba(0, 0, 0, 0.87) !important;
 
     &.theme--dark {
-      background: rgb(30, 30, 30) !important; // Force dark background in dark mode
-      color: rgba(255, 255, 255, 0.87) !important; // Force light text in dark mode
+      background: rgb(30, 30, 30) !important;
+      color: rgba(255, 255, 255, 0.87) !important;
 
       .v-card-title {
         background: rgb(30, 30, 30) !important;
@@ -423,6 +513,32 @@ export default defineComponent({
         
         &:hover {
           background: var(--v-theme-secondary);
+        }
+      }
+    }
+  }
+
+  &.skills-detail-card {
+    background: var(--v-theme-surface) !important;
+    color: var(--v-theme-on-surface);
+
+    &.theme--dark {
+      background: rgb(30, 30, 30) !important;
+      color: rgba(255, 255, 255, 0.87);
+    }
+
+    .v-card-text {
+      padding: 0 !important;
+      overflow: hidden;
+      flex: 1;
+      
+      .skills-section {
+        padding: 0;
+        height: 100%;
+        
+        .skills-container {
+          height: 100%;
+          border-radius: 0;
         }
       }
     }
@@ -622,6 +738,20 @@ export default defineComponent({
       width: 100%;
     }
   }
+
+  .slider-nav {
+    left: 1rem;
+    
+    .nav-button {
+      width: 42px;
+      height: 42px;
+      font-size: 1.3rem;
+    }
+
+    .progress-bar {
+      height: 150px;
+    }
+  }
 }
 
 @media (max-width: 768px) {
@@ -645,6 +775,20 @@ export default defineComponent({
   .equipment-slot .slot-container {
     width: 48px;
     height: 48px;
+  }
+
+  .slider-nav {
+    left: 0.75rem;
+    
+    .nav-button {
+      width: 36px;
+      height: 36px;
+      font-size: 1.2rem;
+    }
+
+    .progress-bar {
+      height: 120px;
+    }
   }
 }
 
@@ -673,6 +817,20 @@ export default defineComponent({
   .rarity-legend {
     margin: 0.25rem 0.5rem;
   }
+
+  .slider-nav {
+    left: 0.5rem;
+    
+    .nav-button {
+      width: 32px;
+      height: 32px;
+      font-size: 1.1rem;
+    }
+
+    .progress-bar {
+      height: 100px;
+    }
+  }
 }
 
 // Print styles
@@ -691,5 +849,19 @@ export default defineComponent({
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
   }
+
+  .blurred {
+    filter: none !important;
+  }
+
+  .detail-card {
+    box-shadow: none !important;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+  }
+
+  .slider-nav {
+    display: none;
+  }
 }
+
 </style>

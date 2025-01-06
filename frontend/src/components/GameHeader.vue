@@ -18,7 +18,8 @@
           v-for="(item, index) in menuItems"
           :key="index"
           class="mx-2 nav-btn glass-effect"
-          disabled
+          :disabled="item.disabled"
+          @click="handleNavClick(item.value)"
         >
           <div class="btn-content">
             <v-icon start class="nav-icon">{{ item.icon }}</v-icon>
@@ -48,17 +49,23 @@ import { useThemeStore } from '@/stores/theme'
 export default defineComponent({
   name: 'GameHeader',
 
-  emits: ['theme-transition-start', 'inventory-expand'],
+  emits: ['theme-transition-start', 'inventory-expand', 'skills-expand'],
 
   setup(props, { emit }) {
     const themeStore = useThemeStore()
     const isTransitioning = ref(false)
 
     const menuItems = [
-      { title: 'Game Mode', icon: 'mdi-gamepad-variant', value: 0 },
-      { title: 'Quests', icon: 'mdi-compass', value: 1 },
-      { title: 'Skills', icon: 'mdi-sword-cross', value: 2 }
+      { title: 'Game Mode', icon: 'mdi-gamepad-variant', value: 0, disabled: true },
+      { title: 'Skills', icon: 'mdi-sword-cross', value: 1, disabled: false },
+      { title: 'Quests', icon: 'mdi-compass', value: 2, disabled: true }
     ]
+
+    const handleNavClick = (value) => {
+      if (value === 1) {
+        emit('skills-expand', true)
+      }
+    }
 
     const handleInventoryClick = () => {
       emit('inventory-expand', true)
@@ -238,6 +245,7 @@ export default defineComponent({
       menuItems,
       isDark: themeStore.isDark,
       toggleTheme,
+      handleNavClick,
       handleInventoryClick
     }
   }
@@ -319,6 +327,12 @@ export default defineComponent({
     transform: translate(-50%, -50%) scale(0);
     transition: transform 0.5s ease;
     pointer-events: none;
+  }
+
+  &:not(:disabled):hover {
+    .btn-glow {
+      transform: translate(-50%, -50%) scale(1);
+    }
   }
 }
 
