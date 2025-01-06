@@ -5,6 +5,8 @@ import router from './router'
 
 // Import CSS before Vuetify
 import './assets/main.css'
+// Import tooltip overrides
+import './styles/tooltip-overrides.scss'
 
 // Vuetify
 import { createVuetify } from 'vuetify'

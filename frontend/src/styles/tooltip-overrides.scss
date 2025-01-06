@@ -1,0 +1,35 @@
+// Global tooltip overrides
+.v-overlay.v-tooltip {
+    .v-overlay__content {
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+  
+    .v-overlay__scrim {
+      opacity: 0 !important;
+    }
+  
+    // Target the internal tooltip content directly
+    .v-tooltip-content {
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+  }
+  
+  // Style the actual content of our tooltips
+  .tooltip-content {
+    background: rgba(255, 255, 255, 0.98) !important;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 0.75rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    max-width: 280px;
+    position: relative;
+    z-index: 10;
+  
+    .theme--dark & {
+      background: rgba(40, 40, 40, 0.98) !important;
+      border-color: rgba(255, 255, 255, 0.1);
+    }
+  }

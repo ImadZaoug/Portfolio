@@ -70,6 +70,28 @@
                 class="close-btn"
               />
             </v-card-title>
+            <!-- Rarity Legend with original styling -->
+            <div class="rarity-legend">
+              <div class="legend-title">Skill Grades:</div>
+              <div class="legend-items">
+                <div class="legend-item common">
+                  <div class="color-dot"></div>
+                  <span>Common</span>
+                </div>
+                <div class="legend-item rare">
+                  <div class="color-dot"></div>
+                  <span>Rare</span>
+                </div>
+                <div class="legend-item legendary">
+                  <div class="color-dot"></div>
+                  <span>Legendary</span>
+                </div>
+                <div class="legend-item mythical">
+                  <div class="color-dot"></div>
+                  <span>Mythical</span>
+                </div>
+              </div>
+            </div>
             <v-divider />
             <v-card-text class="pa-6">
               <InventoryDetails />
@@ -267,6 +289,77 @@ export default defineComponent({
   }
 }
 
+// Rarity Legend styles
+.rarity-legend {
+  position: relative;
+  z-index: 1;
+  margin: 0.25rem 1rem;
+  padding: 0.25rem 0.75rem;
+  background: var(--v-theme-surface);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  height: 28px;
+  gap: 0.5rem;
+
+  .theme--dark & {
+    background: rgba(40, 40, 40, 0.7);
+  }
+
+  .legend-title {
+    font-weight: 500;
+    font-size: 0.85rem;
+    white-space: nowrap;
+  }
+
+  .legend-items {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.9);
+    font-size: 0.8rem;
+
+    .theme--dark & {
+      background: rgba(50, 50, 50, 0.9);
+    }
+
+    .color-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    &.common .color-dot {
+      background: linear-gradient(45deg, #C0C0C0, #A8A8A8);
+    }
+
+    &.rare .color-dot {
+      background: linear-gradient(45deg, #9C27B0, #7B1FA2);
+      box-shadow: 0 0 5px rgba(156, 39, 176, 0.3);
+    }
+
+    &.legendary .color-dot {
+      background: linear-gradient(45deg, #FFD700, #FFA500);
+      box-shadow: 0 0 5px rgba(255, 215, 0, 0.4);
+    }
+
+    &.mythical .color-dot {
+      background: #000;
+      box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+      animation: mythicalPulse 2s infinite;
+    }
+  }
+}
+
 // Base overlay styles
 .overlay-base {
   position: fixed;
@@ -277,85 +370,202 @@ export default defineComponent({
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
-}
+  padding: 1rem;
 
-.overlay-content {
-  width: 90%;
-  height: 90%;
-  max-width: 1600px;
-  position: relative;
-  transform-origin: center;
-  transition: transform 0.3s ease-in-out;
+  .overlay-content {
+    width: 98%;
+    height: 98%;
+    max-width: 1800px;
+    position: relative;
+    transform-origin: center;
+    transition: transform 0.3s ease-in-out;
+    display: flex;
+  }
+
+  &.profile-overlay,
+  &.inventory-overlay {
+    .overlay-content {
+      overflow: visible;
+    }
+  }
 }
 
 // Card styles
 .detail-card {
+  width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
   border-radius: 16px;
   overflow: hidden;
 
+  &.inventory-detail-card {
+    background: rgb(255, 255, 255) !important;
+
+    .v-card-title {
+      padding: 0.5rem 1.25rem !important;
+      min-height: 48px;
+
+      h2 {
+        font-size: 1.25rem;
+        margin: 0;
+      }
+    }
+
+    .v-card-text {
+      background: rgb(255, 255, 255) !important;
+      color: rgba(0, 0, 0, 0.87) !important;
+      overflow-y: auto;
+      padding: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+
+      &::-webkit-scrollbar {
+        width: 8px;
+      }
+      
+      &::-webkit-scrollbar-track {
+        background: rgba(var(--v-theme-on-surface), 0.1);
+        border-radius: 4px;
+      }
+      
+      &::-webkit-scrollbar-thumb {
+        background: var(--v-theme-primary);
+        border-radius: 4px;
+        
+        &:hover {
+          background: var(--v-theme-secondary);
+        }
+      }
+    }
+
+    // Dark theme override
+    .theme--dark & {
+      background: rgb(18, 18, 18) !important;
+      
+      .v-card-title {
+        background: rgb(18, 18, 18);
+        color: white;
+      }
+
+      .v-card-text {
+        background: rgb(18, 18, 18) !important;
+        color: white !important;
+      }
+    }
+  }
+
   &.profile-detail-card {
     background: transparent !important;
 
     .v-card-text {
       background: transparent !important;
-    }
-  }
-
-  &.inventory-detail-card {
-    background: white !important;
-
-    .v-card-text {
-      background: white !important;
-      color: rgba(0, 0, 0, 0.87) !important;
-    }
-
-    // Dark theme override
-    .theme--dark & {
-      .v-card-title {
-        background: rgb(40, 40, 40);
-        color: white;
-      }
-    }
-  }
-
-  .v-card-text {
-    flex: 1;
-    overflow-y: auto;
-    
-    &::-webkit-scrollbar {
-      width: 8px;
-    }
-    
-    &::-webkit-scrollbar-track {
-      background: rgba(var(--v-theme-on-surface), 0.1);
-      border-radius: 4px;
-    }
-    
-    &::-webkit-scrollbar-thumb {
-      background: var(--v-theme-primary);
-      border-radius: 4px;
+      overflow-y: auto;
+      flex: 1;
       
-      &:hover {
-        background: var(--v-theme-secondary);
+      &::-webkit-scrollbar {
+        width: 8px;
       }
+      
+      &::-webkit-scrollbar-track {
+        background: rgba(var(--v-theme-on-surface), 0.1);
+        border-radius: 4px;
+      }
+      
+      &::-webkit-scrollbar-thumb {
+        background: var(--v-theme-primary);
+        border-radius: 4px;
+        
+        &:hover {
+          background: var(--v-theme-secondary);
+        }
+      }
+    }
+  }
+
+  .v-card-title {
+    background: var(--v-theme-background);
+    color: var(--v-theme-on-background);
+    border-bottom: 1px solid var(--v-theme-border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    .theme--dark & {
+      background: rgb(30, 30, 30);
+      color: white;
+      border-color: rgba(255, 255, 255, 0.12);
+    }
+  }
+
+  .close-btn {
+    transition: transform 0.3s ease;
+    color: var(--v-theme-on-surface) !important;
+
+    &:hover {
+      transform: rotate(90deg);
     }
   }
 }
 
-.close-btn {
-  transition: transform 0.3s ease;
-  color: var(--v-theme-on-surface) !important;
+// Equipment section styles
+.equipment-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  padding: 0.75rem;
+}
 
-  &:hover {
-    transform: rotate(90deg);
+.equipment-grid {
+  position: relative;
+  width: 400px;
+  height: 400px;
+  margin: 0.5rem auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.equipment-slot {
+  position: absolute;
+  z-index: 2;
+  transform-origin: center;
+  transition: transform 0.3s ease;
+
+  .slot-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0.4rem;
+    border-radius: 50%;
+    width: 56px;
+    height: 56px;
+    position: relative;
+    background: rgba(var(--v-theme-surface-variant), 0.1);
+    border: 2px dashed var(--v-theme-primary);
+    transition: all 0.3s ease;
+    cursor: pointer;
+
+    &.equipped {
+      border-style: solid;
+      background: rgba(var(--v-theme-primary), 0.1);
+      transform: scale(1.05);
+      box-shadow: 0 0 20px rgba(var(--v-theme-primary), 0.2);
+    }
   }
 }
 
-// Animation
+// Animation keyframes
+@keyframes mythicalPulse {
+  0% { box-shadow: 0 0 5px rgba(0, 0, 0, 0.5); }
+  50% { box-shadow: 0 0 8px rgba(0, 0, 0, 0.7); }
+  100% { box-shadow: 0 0 5px rgba(0, 0, 0, 0.5); }
+}
+
+// Transition animations
 .overlay-enter-active,
 .overlay-leave-active {
   transition: all 0.3s ease;
@@ -376,26 +586,18 @@ export default defineComponent({
 
 // Responsive styles
 @media (max-width: 1200px) {
-  .avatar-sidebar {
-    width: 180px;
-  }
-
   .overlay-base {
-    padding: 1.5rem;
-  }
-}
-
-@media (max-width: 992px) {
-  .avatar-sidebar {
-    width: 160px;
+    padding: 0.5rem;
   }
 
-  .main-content {
-    padding: 0 1.5rem;
+  .equipment-grid {
+    width: 380px;
+    height: 380px;
   }
 
-  .overlay-base {
-    padding: 1rem;
+  .equipment-slot .slot-container {
+    width: 52px;
+    height: 52px;
   }
 }
 
@@ -409,12 +611,17 @@ export default defineComponent({
   }
 
   .overlay-base {
-    padding: 0.5rem;
+    padding: 0.25rem;
   }
 
-  .overlay-content {
-    width: 95%;
-    height: 95%;
+  .equipment-grid {
+    width: 340px;
+    height: 340px;
+  }
+
+  .equipment-slot .slot-container {
+    width: 48px;
+    height: 48px;
   }
 }
 
@@ -443,25 +650,19 @@ export default defineComponent({
 
 // Print styles
 @media print {
-  .home {
-    height: auto;
-    overflow: visible;
-  }
-
-  .avatar-sidebar {
-    display: none;
-  }
-
-  .main-content {
-    padding: 2rem;
-  }
-
   .overlay-base {
-    display: none;
+    position: relative;
+    background: none;
+    padding: 0;
   }
 
-  .blurred {
-    filter: none !important;
+  .equipment-section {
+    page-break-inside: avoid;
+  }
+
+  .rarity-legend {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
 }
 </style>
