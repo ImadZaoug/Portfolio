@@ -6,22 +6,30 @@
       
       <!-- Combined Profile and Personal Info Section -->
       <section class="slide">
-        <PersonalProfile @expand="handleProfileExpand" />
+        <div class="section-wrapper">
+          <PersonalProfile @expand="handleProfileExpand" />
+        </div>
       </section>
 
       <!-- Projects Section -->
       <section class="slide">
-        <LaboratoryProjects 
-          :is-expanded="isSolutionExpanded"
-          @solution-expand="handleSolutionExpand"
-        />
+        <div class="section-wrapper">
+          <LaboratoryProjects 
+            :is-expanded="isSolutionExpanded"
+            @solution-expand="handleSolutionExpand"
+          />
+        </div>
       </section>
 
       <!-- Professional Experience Section -->
       <section class="slide">
-        <ExperienceSection 
-          :experience="experienceStore.experience" 
-        />
+        <div class="section-wrapper">
+          <ExperienceSection 
+            :experience="experienceStore.experience"
+            :is-expanded="isExperienceExpanded"
+            @experience-expand="handleExperienceExpand"
+          />
+        </div>
       </section>
     </div>
   </div>
@@ -57,6 +65,10 @@ export default defineComponent({
       type: Boolean,
       default: false
     },
+    isExperienceExpanded: {
+      type: Boolean,
+      default: false
+    },
     initialSection: {
       type: Number,
       default: 0
@@ -72,7 +84,8 @@ export default defineComponent({
     'animation-start', 
     'animation-complete',
     'profile-expand',
-    'solution-expand'
+    'solution-expand',
+    'experience-expand'
   ],
   
   setup(props, { emit }) {
@@ -80,7 +93,7 @@ export default defineComponent({
     const experienceStore = useExperienceStore()
 
     const currentSlide = ref(props.initialSection)
-    const totalSlides = ref(3) // Updated to reflect the new number of sections
+    const totalSlides = ref(3)
     const isAnimating = ref(false)
 
     // Computed properties
@@ -154,9 +167,14 @@ export default defineComponent({
       emit('solution-expand', { expanded, solution })
     }
 
+    // Experience expansion handling
+    const handleExperienceExpand = ({ expanded, experience }) => {
+      emit('experience-expand', { expanded, experience })
+    }
+
     // Keyboard navigation
     const handleKeydown = (e) => {
-      if (props.disabled || props.disableNavigation || props.isSolutionExpanded) return
+      if (props.disabled || props.disableNavigation || props.isSolutionExpanded || props.isExperienceExpanded) return
       
       if (e.key === 'ArrowUp') {
         e.preventDefault()
@@ -186,7 +204,8 @@ export default defineComponent({
       handleNextSlide,
       handlePrevSlide,
       handleProfileExpand,
-      handleSolutionExpand
+      handleSolutionExpand,
+      handleExperienceExpand
     }
   }
 })
@@ -210,38 +229,40 @@ export default defineComponent({
   will-change: transform;
 }
 
-// Slide styles
 .slide {
   height: 100vh;
-  padding: 3rem;
-  overflow-y: auto;
   backface-visibility: hidden;
   transition: opacity 0.5s ease-in-out;
   background: var(--v-theme-background);
+}
+
+.section-wrapper {
+  height: 100%;
+  padding: 3rem;
+  overflow-y: auto;
 
   &::-webkit-scrollbar {
     width: 6px;
-    &-thumb {
-      background-color: var(--v-theme-primary);
-      border-radius: 3px;
-    }
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--v-theme-primary);
+    border-radius: 3px;
   }
 }
 
-// Responsive styles
 @media (max-width: 768px) {
-  .slide {
+  .section-wrapper {
     padding: 2rem;
   }
 }
 
 @media (max-width: 480px) {
-  .slide {
+  .section-wrapper {
     padding: 1.5rem;
   }
 }
 
-// Print styles
 @media print {
   .profile-slider {
     height: auto;

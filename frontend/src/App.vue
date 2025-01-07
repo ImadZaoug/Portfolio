@@ -60,6 +60,36 @@
         </div>
       </div>
     </transition>
+
+    <!-- Footer -->
+    <v-footer 
+      class="app-footer" 
+      :class="{ 'theme--dark': theme === 'dark' }"
+      app
+    >
+      <div class="footer-content">
+        <div class="footer-left">
+          <span class="copyright">© {{ new Date().getFullYear() }} Portfolio. All rights reserved.</span>
+        </div>
+        <div class="footer-center">
+          <span class="made-with">Made with ❤️</span>
+        </div>
+        <div class="footer-right">
+          <v-btn
+            v-for="(link, index) in socialLinks"
+            :key="index"
+            :href="link.url"
+            target="_blank"
+            variant="text"
+            icon
+            size="small"
+            class="social-link"
+          >
+            <v-icon>{{ link.icon }}</v-icon>
+          </v-btn>
+        </div>
+      </div>
+    </v-footer>
   </v-app>
 </template>
 
@@ -90,6 +120,13 @@ export default {
     const isAnimating = ref(false)
     const homeView = ref(null)
     const isSkillsExpanded = ref(false)
+
+    // Social media links
+    const socialLinks = [
+      { icon: 'mdi-github', url: 'https://github.com/ImadZaoug' },
+      { icon: 'mdi-linkedin', url: 'https://www.linkedin.com/in/imad-zaoug/' },
+      { icon: 'mdi-email', url: 'mailto:imad.zaoug@centrale-casablanca.ma' }
+    ]
     
     onMounted(() => {
       themeStore.initializeTheme()
@@ -171,6 +208,7 @@ export default {
       homeView,
       isSkillsExpanded,
       skillsStore,
+      socialLinks,
       handleNavigation,
       handleThemeTransitionStart,
       handleAnimationStart,
@@ -475,6 +513,62 @@ export default {
   }
 }
 
+/* Footer styles */
+.app-footer {
+  background-color: var(--v-theme-surface) !important;
+  border-top: 1px solid rgba(var(--v-theme-on-surface), 0.12);
+  padding: 0.5rem 1rem !important;
+  transition: all 0.3s ease;
+
+  &.theme--dark {
+    background-color: rgb(30, 30, 30) !important;
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .footer-content {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .footer-left {
+    .copyright {
+      font-size: 0.9rem;
+      color: var(--text-color);
+      opacity: 0.8;
+    }
+  }
+
+  .footer-center {
+    .made-with {
+      font-size: 0.9rem;
+      color: var(--text-color);
+      opacity: 0.8;
+    }
+  }
+
+  .footer-right {
+    display: flex;
+    gap: 0.5rem;
+
+    .social-link {
+      opacity: 0.8;
+      transition: all 0.3s ease;
+
+      &:hover {
+        opacity: 1;
+        transform: translateY(-2px);
+      }
+
+      .v-icon {
+        color: var(--text-color) !important;
+      }
+    }
+  }
+}
+
 /* Media queries */
 @media (max-width: 768px) {
   .skills-overlay {
@@ -484,6 +578,26 @@ export default {
       .v-card-text {
         padding: 0.5rem !important;
       }
+    }
+  }
+
+  .app-footer {
+    .footer-content {
+      flex-direction: column;
+      gap: 0.5rem;
+      text-align: center;
+    }
+
+    .footer-left,
+    .footer-center,
+    .footer-right {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .copyright,
+    .made-with {
+      font-size: 0.8rem;
     }
   }
 }
@@ -525,4 +639,9 @@ export default {
       }
     }
   }
-}</style>
+
+  .app-footer {
+    display: none !important;
+  }
+}
+</style>

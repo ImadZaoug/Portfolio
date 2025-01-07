@@ -1,4 +1,3 @@
-# frontend/src/views/HomeView.vue
 <template>
   <div class="home" :class="{ 'theme--dark': isDark }">
     <!-- Main Content -->
@@ -6,7 +5,7 @@
       class="avatar-sidebar" 
       :class="{ 
         'avatar-right': isAvatarRight, 
-        'blurred': isProfileExpanded || isSolutionExpanded || isInventoryExpanded || isSkillsExpanded
+        'blurred': isProfileExpanded || isSolutionExpanded || isInventoryExpanded || isSkillsExpanded || isExperienceExpanded
       }"
     >
       <!-- Avatar is now handled in App.vue -->
@@ -15,17 +14,19 @@
       class="main-content" 
       :class="{ 
         'content-left': isAvatarRight, 
-        'blurred': isProfileExpanded || isSolutionExpanded || isInventoryExpanded || isSkillsExpanded
+        'blurred': isProfileExpanded || isSolutionExpanded || isInventoryExpanded || isSkillsExpanded || isExperienceExpanded
       }"
     >
       <ProfileSlider 
         @section-change="handleSectionChange"
         @animation-start="handleAnimationStart"
         @animation-complete="handleAnimationComplete"
-        :disabled="isAnimating || isProfileExpanded || isSolutionExpanded || isInventoryExpanded || isSkillsExpanded"
+        :disabled="isAnimating || isProfileExpanded || isSolutionExpanded || isInventoryExpanded || isSkillsExpanded || isExperienceExpanded"
         @profile-expand="handleProfileExpand"
         @solution-expand="handleSolutionExpand"
+        @experience-expand="handleExperienceExpand"
         :is-solution-expanded="isSolutionExpanded"
+        :is-experience-expanded="isExperienceExpanded"
         ref="profileSlider"
       />
     </div>
@@ -33,7 +34,7 @@
     <!-- Navigation Controls -->
     <div 
       class="slider-nav"
-      v-show="!isSolutionExpanded && !isProfileExpanded && !isInventoryExpanded && !isSkillsExpanded"
+      v-show="!isSolutionExpanded && !isProfileExpanded && !isInventoryExpanded && !isSkillsExpanded && !isExperienceExpanded"
     >
       <div class="progress-bar">
         <div class="progress" 
@@ -132,6 +133,13 @@
       :solution="selectedSolution"
       @close="handleSolutionExpand({ expanded: false })"
     />
+
+    <!-- Experience Detail Overlay -->
+    <ExperienceDetails
+      v-if="isExperienceExpanded"
+      :experience="selectedExperience"
+      @close="handleExperienceExpand({ expanded: false })"
+    />
   </div>
 </template>
 
@@ -141,6 +149,7 @@ import { useThemeStore } from '@/stores/theme'
 import ProfileSlider from '@/components/ProfileSlider.vue'
 import ProfileDetail from '@/components/ProfileDetail.vue'
 import SolutionDetail from '@/components/SolutionDetail.vue'
+import ExperienceDetails from '@/components/ExperienceDetails.vue'
 import InventoryDetails from '@/components/InventoryDetails.vue'
 
 export default defineComponent({
@@ -150,6 +159,7 @@ export default defineComponent({
     ProfileSlider,
     ProfileDetail,
     SolutionDetail,
+    ExperienceDetails,
     InventoryDetails
   },
   
@@ -180,7 +190,9 @@ export default defineComponent({
       isProfileExpanded: false,
       isInventoryExpanded: false,
       isSolutionExpanded: false,
-      selectedSolution: null
+      isExperienceExpanded: false,
+      selectedSolution: null,
+      selectedExperience: null
     }
   },
   
@@ -223,7 +235,9 @@ export default defineComponent({
       if (expanded) {
         this.isSolutionExpanded = false
         this.isInventoryExpanded = false
+        this.isExperienceExpanded = false
         this.selectedSolution = null
+        this.selectedExperience = null
         this.$emit('skills-expand', false)
       }
     },
@@ -233,7 +247,9 @@ export default defineComponent({
       if (expanded) {
         this.isProfileExpanded = false
         this.isSolutionExpanded = false
+        this.isExperienceExpanded = false
         this.selectedSolution = null
+        this.selectedExperience = null
         this.$emit('skills-expand', false)
       }
     },
@@ -244,6 +260,20 @@ export default defineComponent({
       if (expanded) {
         this.isProfileExpanded = false
         this.isInventoryExpanded = false
+        this.isExperienceExpanded = false
+        this.selectedExperience = null
+        this.$emit('skills-expand', false)
+      }
+    },
+
+    handleExperienceExpand({ expanded, experience }) {
+      this.isExperienceExpanded = expanded
+      this.selectedExperience = expanded ? experience : null
+      if (expanded) {
+        this.isProfileExpanded = false
+        this.isInventoryExpanded = false
+        this.isSolutionExpanded = false
+        this.selectedSolution = null
         this.$emit('skills-expand', false)
       }
     }
