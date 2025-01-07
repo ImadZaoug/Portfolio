@@ -2,15 +2,37 @@
 <template>
   <v-app-bar class="game-header px-4" flat>
     <div class="d-flex align-center justify-space-between w-100">
-      <!-- Left side - Theme toggle -->
-      <v-btn
-        icon
-        @click="toggleTheme"
-        class="theme-btn glass-effect"
-        :class="{ 'dark': isDark }"
-      >
-        <v-icon>{{ isDark ? 'mdi-white-balance-sunny' : 'mdi-moon-waning-crescent' }}</v-icon>
-      </v-btn>
+      <!-- Left side - Theme toggles -->
+      <div class="d-flex align-center gap-2">
+        <!-- Theme Toggle -->
+        <v-btn
+          icon
+          @click="toggleTheme"
+          class="theme-btn glass-effect"
+          :class="{ 'dark': isDark }"
+        >
+          <v-icon>{{ isDark ? 'mdi-white-balance-sunny' : 'mdi-moon-waning-crescent' }}</v-icon>
+        </v-btn>
+
+        <!-- Cave Mode Toggle (only in light mode) -->
+        <v-btn
+          v-if="!isDark"
+          icon
+          @click="caveStore.toggleCaveMode"
+          class="cave-mode-btn glass-effect"
+          :class="{ 'active': caveStore.isCaveMode }"
+        >
+          <v-icon>{{ caveStore.isCaveMode ? 'mdi-flashlight' : 'mdi-flashlight-off' }}</v-icon>
+          <div class="btn-glow"></div>
+          <v-tooltip
+            activator="parent"
+            location="bottom"
+            :open-delay="200"
+          >
+            {{ caveStore.isCaveMode ? 'Disable Torch Mode' : 'Enable Torch Mode' }}
+          </v-tooltip>
+        </v-btn>
+      </div>
 
       <!-- Center - Main Navigation -->
       <div class="d-flex align-center nav-group">
@@ -43,8 +65,9 @@
 </template>
 
 <script>
-import { defineComponent, ref } from 'vue'
+import { defineComponent, ref, computed } from 'vue'
 import { useThemeStore } from '@/stores/theme'
+import { useCaveStore } from '@/stores/cave'
 
 export default defineComponent({
   name: 'GameHeader',
@@ -53,6 +76,7 @@ export default defineComponent({
 
   setup(props, { emit }) {
     const themeStore = useThemeStore()
+    const caveStore = useCaveStore()
     const isTransitioning = ref(false)
 
     const menuItems = [
@@ -127,8 +151,13 @@ export default defineComponent({
 
     const toggleTheme = async () => {
       if (isTransitioning.value) return
-      isTransitioning.value = true
 
+      // Disable cave mode if active when switching to dark theme
+      if (caveStore.isCaveMode) {
+        caveStore.toggleCaveMode()
+      }
+      
+      isTransitioning.value = true
       emit('theme-transition-start')
 
       let container = document.querySelector('.theme-transition-container')
@@ -243,7 +272,8 @@ export default defineComponent({
 
     return {
       menuItems,
-      isDark: themeStore.isDark,
+      isDark: computed(() => themeStore.isDark),
+      caveStore,
       toggleTheme,
       handleNavClick,
       handleInventoryClick
@@ -336,7 +366,7 @@ export default defineComponent({
   }
 }
 
-.theme-btn, .inventory-btn {
+.theme-btn, .inventory-btn, .cave-mode-btn {
   width: 48px;
   height: 48px;
   position: relative;
@@ -369,6 +399,22 @@ export default defineComponent({
   }
 }
 
+.cave-mode-btn {
+  &.active {
+    background: rgba(255, 193, 7, 0.2) !important;
+    border-color: rgba(255, 193, 7, 0.5);
+
+    .v-icon {
+      color: #ffc107 !important;
+      filter: drop-shadow(0 0 5px rgba(255, 193, 7, 0.5));
+    }
+  }
+
+  &:disabled {
+    display: none;
+  }
+}
+
 @media (max-width: 768px) {
   .nav-btn {
     min-width: auto;
@@ -382,6 +428,11 @@ export default defineComponent({
       margin-right: 0;
     }
   }
+
+  .theme-btn, .inventory-btn, .cave-mode-btn {
+    width: 42px;
+    height: 42px;
+  }
 }
 
 @media (max-width: 576px) {
@@ -391,6 +442,18 @@ export default defineComponent({
 
   .nav-group {
     gap: 0.5rem;
+  }
+
+  .theme-btn, .inventory-btn, .cave-mode-btn {
+    width: 38px;
+    height: 38px;
+  }
+}
+
+/* Print styles */
+@media print {
+  .cave-mode-btn {
+    display: none !important;
   }
 }
 </style>

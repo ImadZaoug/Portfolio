@@ -1,6 +1,13 @@
 # frontend/src/App.vue
 <template>
   <v-app :theme="theme">
+    <!-- Cave Mode Overlay -->
+    <div
+      v-if="isCaveMode"
+      ref="overlay"
+      class="cave-mode-overlay"
+    ></div>
+    
     <!-- Header -->
     <GameHeader 
       :current-section="currentSection"
@@ -101,6 +108,7 @@
 import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useThemeStore } from '@/stores/theme'
 import { useSkillsStore } from '@/stores/skills'
+import { useCaveStore } from '@/stores/cave'
 import GameHeader from '@/components/GameHeader.vue'
 import ThreeDAvatar from '@/components/ThreeDAvatar.vue'
 import HomeView from '@/views/HomeView.vue'
@@ -119,11 +127,15 @@ export default {
   setup() {
     const themeStore = useThemeStore()
     const skillsStore = useSkillsStore()
+    const caveStore = useCaveStore()
     const currentSection = ref(0)
     const avatar = ref(null)
+    const overlay = ref(null)
     const isAnimating = ref(false)
     const homeView = ref(null)
     const isSkillsExpanded = ref(false)
+    let animationFrameId = null
+    const torchRadius = ref(150)
 
     // Social media links
     const socialLinks = [
@@ -131,14 +143,49 @@ export default {
       { icon: 'mdi-linkedin', url: 'https://www.linkedin.com/in/imad-zaoug/' },
       { icon: 'mdi-email', url: 'mailto:imad.zaoug@centrale-casablanca.ma' }
     ]
-    
+
+    // Cave Mode Functions
+    const handleMouseMove = (e) => {
+      if (!caveStore.isCaveMode || !overlay.value) return
+      
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId)
+      }
+
+      animationFrameId = requestAnimationFrame(() => {
+        const gradient = `radial-gradient(
+          circle ${torchRadius.value}px at ${e.clientX}px ${e.clientY}px,
+          transparent 10%,
+          rgba(0, 0, 0, 0.97) 70%
+        )`
+
+        overlay.value.style.maskImage = gradient
+        overlay.value.style.webkitMaskImage = gradient
+      })
+    }
+
+    const handleTouchMove = (e) => {
+      if (!caveStore.isCaveMode || !overlay.value || !e.touches?.[0]) return
+      
+      const touch = e.touches[0]
+      handleMouseMove(touch)
+    }
+
+    // Component Functions
     onMounted(() => {
       themeStore.initializeTheme()
       document.addEventListener('fullscreenchange', handleFullscreenChange)
+      window.addEventListener('mousemove', handleMouseMove)
+      window.addEventListener('touchmove', handleTouchMove)
     })
 
     onUnmounted(() => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange)
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('touchmove', handleTouchMove)
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId)
+      }
     })
 
     const handleFullscreenChange = () => {
@@ -208,12 +255,14 @@ export default {
     return {
       theme: computed(() => themeStore.isDark ? 'dark' : 'light'),
       isDark: computed(() => themeStore.isDark),
+      isCaveMode: computed(() => caveStore.isCaveMode),
       currentSection,
       avatar,
       homeView,
       isSkillsExpanded,
       skillsStore,
       socialLinks,
+      overlay,
       handleNavigation,
       handleThemeTransitionStart,
       handleAnimationStart,
@@ -237,6 +286,29 @@ export default {
   }
 }
 
+/* Cave Mode Styles */
+.cave-mode {
+  cursor: none !important;
+
+  * {
+    cursor: none !important;
+  }
+}
+
+.cave-mode-overlay {
+  position: fixed;
+  inset: 0;
+  background: black;
+  pointer-events: none;
+  z-index: 100;
+  transition: opacity 0.3s ease;
+  
+  // Improved performance
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+  will-change: mask-image;
+}
 :root {
   --text-color: var(--v-theme-on-surface-variant);
 }
