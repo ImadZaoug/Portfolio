@@ -1,19 +1,12 @@
+# frontend/src/views/HomeView.vue
 <template>
   <div class="home" :class="{ 'theme--dark': isDark }">
     <!-- Main Content -->
     <div 
-      class="avatar-sidebar" 
-      :class="{ 
-        'avatar-right': isAvatarRight, 
-        'blurred': isProfileExpanded || isSolutionExpanded || isInventoryExpanded || isSkillsExpanded || isExperienceExpanded
-      }"
-    >
-      <!-- Avatar is now handled in App.vue -->
-    </div>
-    <div 
       class="main-content" 
       :class="{ 
-        'content-left': isAvatarRight, 
+        'with-avatar': currentSection === 0,
+        'full-width': currentSection > 0,
         'blurred': isProfileExpanded || isSolutionExpanded || isInventoryExpanded || isSkillsExpanded || isExperienceExpanded
       }"
     >
@@ -196,12 +189,6 @@ export default defineComponent({
     }
   },
   
-  computed: {
-    isAvatarRight() {
-      return this.currentSection % 2 === 1
-    }
-  },
-  
   methods: {
     handlePrevSection() {
       if (this.profileSlider && !this.isAnimating) {
@@ -292,26 +279,6 @@ export default defineComponent({
   transition: background-color 0.3s ease;
 }
 
-.avatar-sidebar {
-  width: 200px;
-  height: 100vh;
-  position: relative;
-  transition: all 0.5s ease-in-out;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2;
-
-  &.avatar-right {
-    order: 2;
-  }
-
-  &.blurred {
-    filter: blur(8px);
-    pointer-events: none;
-  }
-}
-
 .main-content {
   flex: 1;
   height: 100vh;
@@ -321,8 +288,14 @@ export default defineComponent({
   position: relative;
   z-index: 1;
 
-  &.content-left {
-    order: 1;
+  &.with-avatar {
+    margin-left: 200px;
+    width: calc(100% - 200px);
+  }
+
+  &.full-width {
+    margin-left: 0;
+    width: 100%;
   }
 
   &.blurred {
@@ -742,7 +715,7 @@ export default defineComponent({
   }
 }
 
-// Responsive styles
+// Media queries
 @media (max-width: 1200px) {
   .overlay-base {
     padding: 0.5rem;
@@ -782,15 +755,23 @@ export default defineComponent({
       height: 150px;
     }
   }
+
+  .main-content {
+    &.with-avatar {
+      margin-left: 150px;
+      width: calc(100% - 150px);
+    }
+  }
 }
 
 @media (max-width: 768px) {
-  .avatar-sidebar {
-    width: 140px;
-  }
-
   .main-content {
     padding: 0 1rem;
+
+    &.with-avatar {
+      margin-left: 120px;
+      width: calc(100% - 120px);
+    }
   }
 
   .overlay-base {
@@ -823,12 +804,13 @@ export default defineComponent({
 }
 
 @media (max-width: 576px) {
-  .avatar-sidebar {
-    width: 120px;
-  }
-
   .main-content {
     padding: 0 0.5rem;
+
+    &.with-avatar {
+      margin-left: 100px;
+      width: calc(100% - 100px);
+    }
   }
 
   .overlay-base {
@@ -892,6 +874,13 @@ export default defineComponent({
   .slider-nav {
     display: none;
   }
-}
 
+  .main-content {
+    &.with-avatar,
+    &.full-width {
+      margin-left: 0;
+      width: 100%;
+    }
+  }
+}
 </style>

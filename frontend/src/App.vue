@@ -24,9 +24,10 @@
 
     <!-- Avatar -->
     <ThreeDAvatar 
+      v-if="currentSection === 0"
       ref="avatar"
       :current-section="currentSection"
-      :position="currentSection % 2 === 1 ? 'right' : 'left'"
+      :position="'left'"
       @animation-complete="handleAnimationComplete"
     />
 
