@@ -1,6 +1,6 @@
 # frontend/src/components/ThreeDAvatar.vue
 <template>
-  <div class="avatar-container" :class="{ 'avatar-right': position === 'right' }">
+  <div class="avatar-container">
     <canvas ref="canvas" />
     <div v-if="!loaded" class="loading">Loading avatar...</div>
   </div>
@@ -12,7 +12,6 @@ import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-
 
 export default {
   name: 'ThreeDAvatar',
@@ -32,9 +31,9 @@ export default {
   emits: ['animation-complete'],
   
   setup(props, { emit, expose }) {
-
     const canvas = ref(null)
     const loaded = ref(false)
+    const initialized = ref(false)
     let scene, camera, renderer, model, mixer, controls
     let currentAnimation = null
     const clock = new THREE.Clock()
@@ -60,7 +59,6 @@ export default {
 
     const loadAnimations = async () => {
       try {
-        console.log('Loading animations...')
         const animationFiles = {
           'offensiveIdle': '/animations/Offensive Idle.fbx',
           'standingIdle': '/animations/Standing Idle.fbx',
@@ -88,38 +86,42 @@ export default {
 
     const playAnimation = async (name, duration = 0.5, loop = true) => {
       return new Promise((resolve) => {
+        if (!mixer || !animations[name]) {
+          console.warn(`Cannot play animation "${name}". Mixer or animation not ready.`)
+          resolve()
+          return
+        }
+
         if (currentAnimation) {
           currentAnimation.fadeOut(duration)
         }
         
-        if (animations[name]) {
-          const action = animations[name]
-          action.reset()
-          action.fadeIn(duration)
-          action.play()
+        const action = animations[name]
+        action.reset()
+        action.fadeIn(duration)
+        action.play()
+        
+        if (!loop) {
+          action.setLoop(THREE.LoopOnce)
+          action.clampWhenFinished = true
           
-          if (!loop) {
-            action.setLoop(THREE.LoopOnce)
-            action.clampWhenFinished = true
-            
-            mixer.addEventListener('finished', () => {
-              mixer.removeEventListener('finished')
-              emit('animation-complete')
-              resolve()
-            })
-          } else {
+          const onFinished = () => {
+            mixer.removeEventListener('finished', onFinished)
+            emit('animation-complete')
             resolve()
           }
           
-          currentAnimation = action
+          mixer.addEventListener('finished', onFinished)
         } else {
-          console.warn(`Animation "${name}" not found. Available animations:`, Object.keys(animations))
           resolve()
         }
+        
+        currentAnimation = action
       })
     }
 
     const handleAnimationEvent = async (event) => {
+      if (!loaded.value) return
       const { animation, toSection } = event
       await playAnimation(animation, 0.3, false)
       const idleAnimation = toSection === 0 ? 'offensiveIdle' : 'standingIdle'
@@ -127,6 +129,8 @@ export default {
     }
 
     const initScene = () => {
+      if (initialized.value) return
+      
       scene = new THREE.Scene()
       scene.background = null
 
@@ -148,10 +152,11 @@ export default {
       renderer = new THREE.WebGLRenderer({
         canvas: canvas.value,
         antialias: true,
-        alpha: true
+        alpha: true,
+        powerPreference: 'high-performance'
       })
       renderer.setSize(300, 500)
-      renderer.setPixelRatio(window.devicePixelRatio)
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
       renderer.setClearColor(0x000000, 0)
       renderer.shadowMap.enabled = true
       renderer.shadowMap.type = THREE.PCFSoftShadowMap
@@ -162,9 +167,13 @@ export default {
       controls.enablePan = false
       controls.enableRotate = false
       controls.autoRotate = false
+
+      initialized.value = true
     }
 
     const loadModel = () => {
+      if (!initialized.value) return
+      
       const loader = new GLTFLoader()
       loader.load(
         '/models/67740c03ae515f20c0580732.glb',
@@ -177,16 +186,20 @@ export default {
             if (node.isMesh) {
               node.castShadow = true
               node.receiveShadow = true
+              // Optimize materials
+              if (node.material) {
+                node.material.needsUpdate = false
+              }
             }
           })
           
           scene.add(model)
           mixer = new THREE.AnimationMixer(model)
           await loadAnimations()
-          loaded.value = true
         },
         (progress) => {
-          console.log('Loading model...', (progress.loaded / progress.total * 100) + '%')
+          const percentage = (progress.loaded / progress.total * 100).toFixed(2)
+          console.log('Loading model...', percentage + '%')
         },
         (error) => {
           console.error('Error loading model:', error)
@@ -195,13 +208,27 @@ export default {
     }
 
     const animate = () => {
-      requestAnimationFrame(animate)
+      if (!initialized.value) return
+      
+      const animationFrame = requestAnimationFrame(animate)
       const delta = clock.getDelta()
-      if (mixer) mixer.update(delta)
-      renderer.render(scene, camera)
+      
+      if (mixer) {
+        mixer.update(delta)
+      }
+      
+      if (renderer && scene && camera) {
+        renderer.render(scene, camera)
+      }
+
+      return () => {
+        cancelAnimationFrame(animationFrame)
+      }
     }
 
     const handleResize = () => {
+      if (!initialized.value) return
+      
       if (camera && renderer) {
         camera.aspect = 350 / 600
         camera.updateProjectionMatrix()
@@ -226,23 +253,60 @@ export default {
 
     onBeforeUnmount(() => {
       window.removeEventListener('resize', handleResize)
-      if (mixer) mixer.stopAllAction()
-      if (renderer) renderer.dispose()
-      if (controls) controls.dispose()
-      
-      scene.traverse((object) => {
-        if (object.geometry) object.geometry.dispose()
-        if (object.material) {
-          if (Array.isArray(object.material)) {
-            object.material.forEach(material => material.dispose())
-          } else {
-            object.material.dispose()
+
+      // Cleanup resources
+      if (mixer) {
+        mixer.stopAllAction()
+        mixer.uncacheRoot(model)
+      }
+
+      if (renderer) {
+        renderer.dispose()
+        renderer.forceContextLoss()
+      }
+
+      if (controls) {
+        controls.dispose()
+      }
+
+      if (scene) {
+        scene.traverse((object) => {
+          if (object.geometry) {
+            object.geometry.dispose()
           }
-        }
-      })
+          if (object.material) {
+            if (Array.isArray(object.material)) {
+              object.material.forEach(material => {
+                material.dispose()
+                if (material.map) material.map.dispose()
+                if (material.lightMap) material.lightMap.dispose()
+                if (material.bumpMap) material.bumpMap.dispose()
+                if (material.normalMap) material.normalMap.dispose()
+                if (material.specularMap) material.specularMap.dispose()
+                if (material.envMap) material.envMap.dispose()
+              })
+            } else {
+              object.material.dispose()
+              if (object.material.map) object.material.map.dispose()
+              if (object.material.lightMap) object.material.lightMap.dispose()
+              if (object.material.bumpMap) object.material.bumpMap.dispose()
+              if (object.material.normalMap) object.material.normalMap.dispose()
+              if (object.material.specularMap) object.material.specularMap.dispose()
+              if (object.material.envMap) object.material.envMap.dispose()
+            }
+          }
+        })
+      }
+
+      scene = null
+      camera = null
+      renderer = null
+      model = null
+      mixer = null
+      controls = null
+      initialized.value = false
     })
 
-    // Expose methods to parent component
     expose({
       startThemeAnimation: () => {
         if (loaded.value) {
@@ -265,18 +329,14 @@ export default {
 
 <style lang="scss" scoped>
 .avatar-container {
-  position: fixed;
   width: 300px;
   height: 500px;
-  z-index: 1000;
-  transition: all 0.5s ease-in-out;
+  will-change: transform, opacity;
 
-  &.avatar-right {
-    right: 80px;
-  }
-
-  &:not(.avatar-right) {
-    left: 80px;
+  canvas {
+    width: 100% !important;
+    height: 100% !important;
+    pointer-events: none;
   }
 }
 
@@ -293,36 +353,17 @@ export default {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-canvas {
-  width: 100% !important;
-  height: 100% !important;
-  pointer-events: none;
-}
-
 @media (max-width: 768px) {
   .avatar-container {
-    &.avatar-right {
-      right: 40px;
-    }
-
-    &:not(.avatar-right) {
-      left: 40px;
-    }
+    width: 250px;
+    height: 450px;
   }
 }
 
 @media (max-width: 480px) {
   .avatar-container {
-    width: 250px;
+    width: 200px;
     height: 400px;
-
-    &.avatar-right {
-      right: 20px;
-    }
-
-    &:not(.avatar-right) {
-      left: 20px;
-    }
   }
 }
 </style>

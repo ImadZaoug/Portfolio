@@ -22,13 +22,16 @@
       />
     </v-main>
 
-    <!-- Avatar -->
+    <!-- Avatar - Now always mounted but conditionally visible -->
     <ThreeDAvatar 
-      v-if="currentSection === 0"
       ref="avatar"
       :current-section="currentSection"
       :position="'left'"
       @animation-complete="handleAnimationComplete"
+      :class="{
+        'avatar-hidden': currentSection !== 0,
+        'avatar-visible': currentSection === 0
+      }"
     />
 
     <!-- Skills Overlay -->
@@ -204,6 +207,7 @@ export default {
 
     return {
       theme: computed(() => themeStore.isDark ? 'dark' : 'light'),
+      isDark: computed(() => themeStore.isDark),
       currentSection,
       avatar,
       homeView,
@@ -277,6 +281,28 @@ export default {
       color: var(--v-theme-on-surface-variant) !important;
     }
   }
+}
+
+/* Avatar transitions */
+.avatar-hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-100%);
+  position: fixed;
+  left: 0;
+}
+
+.avatar-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0);
+  position: fixed;
+  left: 80px;
+}
+
+.v-application :deep(.avatar-hidden),
+.v-application :deep(.avatar-visible) {
+  transition: all 0.5s ease-in-out;
 }
 
 /* Theme transition styles */
@@ -620,6 +646,10 @@ export default {
       }
     }
   }
+
+  .avatar-visible {
+    left: 40px;
+  }
 }
 
 /* Print styles */
@@ -642,6 +672,11 @@ export default {
   }
 
   .app-footer {
+    display: none !important;
+  }
+
+  .avatar-hidden,
+  .avatar-visible {
     display: none !important;
   }
 }
