@@ -1,25 +1,23 @@
+//frontend/src/components/SkillTree.vue
 <template>
   <div class="skill-tree-wrapper" :class="{ 'fullscreen': isFullscreen }">
     <!-- Navigation Controls -->
     <div class="navigation-controls">
-      <button class="control-btn" @click="zoomIn" title="Zoom In">
-        <span>+</span>
-      </button>
-      <button class="control-btn" @click="zoomOut" title="Zoom Out">
-        <span>-</span>
-      </button>
-      <button 
-        class="control-btn fullscreen-btn" 
-        @click="toggleFullscreen" 
-        :title="isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'"
-      >
-        <!-- Unicode characters for maximize/minimize icons -->
-        <span v-if="!isFullscreen">⛶</span>
-        <span v-else>⊡</span>
-      </button>
+      <v-btn icon small @click="zoomIn" class="control-btn" color="primary">
+        <v-icon>mdi-plus</v-icon>
+      </v-btn>
+      <v-btn icon small @click="zoomOut" class="control-btn" color="primary">
+        <v-icon>mdi-minus</v-icon>
+      </v-btn>
+      <v-btn icon small @click="resetZoom" class="control-btn" color="primary">
+        <v-icon>mdi-backup-restore</v-icon>
+      </v-btn>
+      <v-btn icon small @click="toggleFullscreen" class="control-btn" color="primary">
+        <v-icon>{{ isFullscreen ? 'mdi-fullscreen-exit' : 'mdi-fullscreen' }}</v-icon>
+      </v-btn>
     </div>
 
-    <!-- Main Skill Tree Content -->
+    <!-- Main Skill Tree Container -->
     <div 
       class="skill-tree-container"
       ref="container"
@@ -33,31 +31,48 @@
       @touchend="handleTouchEnd"
     >
       <div 
-        class="skill-tree"
+        class="skill-tree-content"
         :style="{
           transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`,
           transition: isPanning ? 'none' : 'transform 0.3s ease'
         }"
       >
-        <!-- SVG Connection Lines -->
+        <!-- SVG Connection Lines Layer -->
         <svg class="connections-layer" :width="width" :height="height">
           <defs>
-            <filter id="glow">
-              <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+            <filter id="glow" height="130%">
+              <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="blur" />
+              <feFlood flood-color="#ffd700" flood-opacity="0.3" result="color"/>
+              <feComposite in="color" in2="blur" operator="in" result="blur"/>
               <feMerge>
-                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="blur"/>
                 <feMergeNode in="SourceGraphic"/>
               </feMerge>
             </filter>
+            
+            <linearGradient id="activeConnection" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" style="stop-color:#ffd700;stop-opacity:1" />
+              <stop offset="100%" style="stop-color:#ffd700;stop-opacity:0.6" />
+            </linearGradient>
+
+            <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
+              <path d="M 50 0 L 0 0 0 50" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+            </pattern>
           </defs>
-          <line
+
+          <!-- Grid Background -->
+          <rect width="100%" height="100%" fill="url(#grid)" />
+          
+          <!-- Connection Lines -->
+          <path
             v-for="(connection, index) in connections"
             :key="index"
-            :x1="connection.x1"
-            :y1="connection.y1"
-            :x2="connection.x2"
-            :y2="connection.y2"
-            :class="{ 'connection-active': connection.active }"
+            :d="generatePath(connection)"
+            :class="{
+              'connection-active': connection.active,
+              'connection-available': connection.available && !connection.active,
+              'connection-locked': !connection.available && !connection.active
+            }"
             class="skill-connection"
           />
         </svg>
@@ -71,7 +86,9 @@
             'unlocked': node.unlocked,
             'available': isNodeAvailable(node),
             'unavailable': !isNodeAvailable(node) && !node.unlocked,
-            'hovered': node.isHovered
+            'hovered': node.isHovered,
+            'locked': !node.unlocked && !isNodeAvailable(node),
+            'root': !node.dependencies
           }"
           :style="{
             left: `${node.x}px`,
@@ -81,44 +98,111 @@
           @mouseenter="handleNodeHover(node, true)"
           @mouseleave="handleNodeHover(node, false)"
         >
-          <div class="node-icon">{{ node.icon }}</div>
-          <div class="node-ring"></div>
-          
-          <!-- Skill Tooltip -->
-          <div class="skill-tooltip" v-if="node.isHovered">
-            <h3>{{ node.name }}</h3>
-            <p>{{ node.description }}</p>
-            <div class="skill-requirements" v-if="!node.unlocked && node.dependencies?.length">
-              <span>Requirements:</span>
-              <ul>
-                <li v-for="depId in node.dependencies" :key="depId">
-                  {{ getNodeName(depId) }}
-                </li>
-              </ul>
-            </div>
-            <div class="skill-cost" v-if="!node.unlocked && isNodeAvailable(node)">
-              Cost: {{ node.cost }} points
+          <!-- Node Content -->
+          <div class="node-content">
+            <div class="node-icon">
+              <template v-if="isImageIcon(node.unlocked ? node.icon : node.lockedIcon)">
+                <img 
+                  :src="node.unlocked ? node.icon : node.lockedIcon" 
+                  :alt="node.name"
+                  class="skill-icon"
+                  width="24"
+                  height="24"
+                />
+              </template>
+              <template v-else>
+                {{ node.unlocked ? node.icon : node.lockedIcon }}
+              </template>
             </div>
           </div>
-        </div>
+          
+          <!-- Connection Points -->
+          <div class="connection-points">
+            <div class="connection-point top"></div>
+            <div class="connection-point right"></div>
+            <div class="connection-point bottom"></div>
+            <div class="connection-point left"></div>
+          </div>
+          
+          <!-- Skill Tooltip -->
+          <div 
+            v-if="node.isHovered"
+            class="skill-tooltip"
+            :class="{
+              'tooltip-left': node.branch === 'right',
+              'tooltip-right': node.branch === 'left'
+            }"
+          >
+            <div class="tooltip-header">
+              <h3>{{ node.name }}</h3>
+              <span v-if="node.cost" class="cost-badge">
+                {{ node.cost }} pts
+              </span>
+            </div>
+            
+            <p>{{ node.description }}</p>
 
-        <!-- Background Grid Pattern -->
-        <div class="grid-pattern"></div>
+            <template v-if="!node.unlocked">
+              <div v-if="node.dependencies?.length" class="requirements">
+                <span class="section-title">Requirements:</span>
+                <ul>
+                  <li 
+                    v-for="depId in node.dependencies" 
+                    :key="depId"
+                    :class="{ 'met': isRequirementMet(depId) }"
+                  >
+                    {{ getNodeName(depId) }}
+                    <v-icon 
+                      small 
+                      :color="isRequirementMet(depId) ? 'success' : 'error'"
+                      class="requirement-icon"
+                    >
+                      {{ isRequirementMet(depId) ? 'mdi-check' : 'mdi-close' }}
+                    </v-icon>
+                  </li>
+                </ul>
+              </div>
+
+              <div v-if="isNodeAvailable(node)" class="unlock-info">
+                <div class="points-check">
+                  <span>Required Points:</span>
+                  <span :class="{ 'insufficient': availablePoints < node.cost }">
+                    {{ node.cost }}/{{ availablePoints }}
+                  </span>
+                </div>
+                <v-btn
+                  small
+                  block
+                  :disabled="availablePoints < node.cost"
+                  @click.stop="handleNodeClick(node)"
+                  color="primary"
+                  class="unlock-btn"
+                >
+                  Unlock Skill
+                </v-btn>
+              </div>
+            </template>
+          </div>
+        </div>
       </div>
     </div>
 
     <!-- Points Display -->
-    <div class="skill-points-display">
-      <div class="points-container">
-        <span class="points-label">Ability Points:</span>
+    <div class="points-display">
+      <div class="points-info">
+        <span class="points-label">Available Points:</span>
         <span class="points-value">{{ availablePoints }}</span>
-        <span class="points-max">/ {{ maxPoints }}</span>
+        <span class="points-separator">/</span>
+        <span class="points-max">{{ maxPoints }}</span>
       </div>
-      <div class="points-progress">
+      <div class="points-bar">
         <div 
-          class="progress-bar" 
+          class="points-progress"
           :style="{ width: `${(availablePoints / maxPoints) * 100}%` }"
         ></div>
+      </div>
+      <div class="points-stats">
+        <span>Skills Unlocked: {{ unlockedCount }}/{{ totalSkills }}</span>
       </div>
     </div>
   </div>
@@ -129,45 +213,46 @@ import { ref, onMounted, onUnmounted } from 'vue'
 
 export default {
   name: 'SkillTree',
+  
   props: {
     initialSkills: {
       type: Array,
-      default: () => []
+      required: true
     },
     availablePoints: {
       type: Number,
-      default: 0
+      required: true
     },
     maxPoints: {
       type: Number,
-      default: 100
+      required: true
     },
     isFullscreen: {
       type: Boolean,
       default: false
     }
   },
-  
+
   emits: ['unlock-skill', 'fullscreen-change'],
-  
+
   setup(props, { emit }) {
-    // State
-    const width = ref(1200)
-    const height = ref(800)
-    const skillNodes = ref([])
-    const connections = ref([])
-    const zoom = ref(1)
-    const minZoom = 0.5
+    const container = ref(null)
+    const width = ref(2000)
+    const height = ref(1200)
+    const zoom = ref(0.8)
+    const defaultZoom = 0.8
+    const minZoom = 0.4
     const maxZoom = 2
     const position = ref({ x: 0, y: 0 })
     const isPanning = ref(false)
     const startPosition = ref({ x: 0, y: 0 })
-    const lastPosition = ref({ x: 0, y: 0 })
-    const touchStartDistance = ref(0)
-    const initialZoom = ref(1)
-    const container = ref(null)
+    const skillNodes = ref([])
+    const connections = ref([])
+    const unlockedCount = ref(0)
+    const totalSkills = ref(0)
+    const isImageIcon = (icon) => icon.endsWith('.png')
 
-    // Node Management
+    // Initialize nodes and connections
     const initializeNodes = () => {
       skillNodes.value = props.initialSkills.map(skill => ({
         ...skill,
@@ -175,20 +260,83 @@ export default {
         y: skill.position.y,
         isHovered: false
       }))
+      totalSkills.value = skillNodes.value.length - 2 // Exclude root nodes
       generateConnections()
       centerTree()
+      updateUnlockedCount()
     }
 
-    const centerTree = () => {
-      if (container.value) {
-        const containerRect = container.value.getBoundingClientRect()
-        position.value = {
-          x: (containerRect.width - width.value) / 2,
-          y: (containerRect.height - height.value) / 2
-        }
+    // Generate connection paths
+    const generatePath = (connection) => {
+      // Node properties
+      const NODE_RADIUS = 30
+      const start = { x: connection.x1, y: connection.y1 }
+      const end = { x: connection.x2, y: connection.y2 }
+      
+      // Calculate the angle and distance between nodes
+      const dx = end.x - start.x
+      const dy = end.y - start.y
+      const angle = Math.atan2(dy, dx)
+      const distance = Math.sqrt(dx * dx + dy * dy)
+
+      // Calculate exact points at node edges
+      const startPoint = {
+        x: start.x + Math.cos(angle) * NODE_RADIUS,
+        y: start.y + Math.sin(angle) * NODE_RADIUS
+      }
+      const endPoint = {
+        x: end.x - Math.cos(angle) * NODE_RADIUS,
+        y: end.y - Math.sin(angle) * NODE_RADIUS
+      }
+
+      // For very close nodes, use a straight line
+      if (distance < NODE_RADIUS * 3) {
+        return `M ${startPoint.x} ${startPoint.y} L ${endPoint.x} ${endPoint.y}`
+      }
+
+      // Different connection styles based on branch
+      if (connection.branch === 'right') {
+        // For right branch (downward flow), use vertical-priority paths
+        const controlDistance = Math.min(distance * 0.5, 100)
+        return `M ${startPoint.x} ${startPoint.y}
+                C ${startPoint.x} ${startPoint.y + controlDistance}
+                  ${endPoint.x} ${endPoint.y - controlDistance}
+                  ${endPoint.x} ${endPoint.y}`
+      } else if (connection.branch === 'left') {
+        // For left branch (upward flow), use horizontal-priority paths
+        const controlDistance = Math.min(distance * 0.5, 100)
+        return `M ${startPoint.x} ${startPoint.y}
+                C ${startPoint.x + controlDistance} ${startPoint.y}
+                  ${endPoint.x - controlDistance} ${endPoint.y}
+                  ${endPoint.x} ${endPoint.y}`
+      }
+
+      // For cross-branch or default connections, use angled paths
+      const midX = (startPoint.x + endPoint.x) / 2
+      const midY = (startPoint.y + endPoint.y) / 2
+      const cornerRadius = 20 // Radius for rounded corners
+
+      // Create a path with rounded corners using both midX and midY for better alignment
+      if (Math.abs(dx) > Math.abs(dy)) {
+        // Horizontal dominant path
+        return `M ${startPoint.x} ${startPoint.y}
+                L ${midX - cornerRadius} ${startPoint.y}
+                Q ${midX} ${startPoint.y} ${midX} ${midY}
+                L ${midX} ${endPoint.y}
+                Q ${midX} ${endPoint.y} ${midX + cornerRadius} ${endPoint.y}
+                L ${endPoint.x} ${endPoint.y}`
+      } else {
+        // Vertical dominant path
+        return `M ${startPoint.x} ${startPoint.y}
+                L ${startPoint.x} ${midY - cornerRadius}
+                Q ${startPoint.x} ${midY} ${midX} ${midY}
+                L ${endPoint.x} ${midY}
+                Q ${endPoint.x} ${midY} ${endPoint.x} ${midY + cornerRadius}
+                L ${endPoint.x} ${endPoint.y}`
       }
     }
 
+    // Generate connections between nodes
     const generateConnections = () => {
       connections.value = []
       skillNodes.value.forEach(node => {
@@ -196,12 +344,15 @@ export default {
           node.dependencies.forEach(depId => {
             const parentNode = skillNodes.value.find(n => n.id === depId)
             if (parentNode) {
+              // Use the actual node coordinates as centers
               connections.value.push({
-                x1: parentNode.x + 30,
-                y1: parentNode.y + 30,
-                x2: node.x + 30,
-                y2: node.y + 30,
-                active: parentNode.unlocked && node.unlocked
+                x1: parentNode.x,
+                y1: parentNode.y,
+                x2: node.x,
+                y2: node.y,
+                active: parentNode.unlocked && node.unlocked,
+                available: parentNode.unlocked && !node.unlocked,
+                branch: node.branch
               })
             }
           })
@@ -209,23 +360,32 @@ export default {
       })
     }
 
-    const isNodeAvailable = (node) => {
-      if (!node.dependencies) return true
-      return node.dependencies.every(depId => 
-        skillNodes.value.find(n => n.id === depId && n.unlocked)
-      )
+    // Update unlocked skills count
+    const updateUnlockedCount = () => {
+      unlockedCount.value = skillNodes.value.filter(node => 
+        node.unlocked && !['statistics', 'coding'].includes(node.id)
+      ).length
     }
 
-    const getNodeName = (nodeId) => {
-      const node = skillNodes.value.find(n => n.id === nodeId)
-      return node ? node.name : nodeId
+    // Center the skill tree in the viewport
+    const centerTree = () => {
+      if (container.value) {
+        const containerRect = container.value.getBoundingClientRect()
+        position.value = {
+          x: (containerRect.width - width.value * zoom.value) / 2,
+          y: (containerRect.height - height.value * zoom.value) / 2
+        }
+      }
     }
 
+    // Node interaction handlers
     const handleNodeClick = (node) => {
       if (!isNodeAvailable(node) || node.unlocked) return
       if (props.availablePoints < node.cost) return
       emit('unlock-skill', node.id)
+      node.unlocked = true
       generateConnections()
+      updateUnlockedCount()
     }
 
     const handleNodeHover = (node, isHovered) => {
@@ -235,40 +395,7 @@ export default {
       }
     }
 
-    // Fullscreen Controls
-    const toggleFullscreen = async () => {
-      if (props.isFullscreen) {
-        try {
-          if (document.fullscreenElement) {
-            await document.exitFullscreen()
-          }
-          document.body.style.overflow = ''
-          
-          setTimeout(() => {
-            centerTree()
-            zoom.value = 1
-          }, 100)
-        } catch (err) {
-          console.error('Error exiting fullscreen:', err)
-        }
-      } else {
-        try {
-          await container.value?.requestFullscreen()
-          document.body.style.overflow = 'hidden'
-          
-          setTimeout(() => {
-            centerTree()
-            zoom.value = 1
-          }, 100)
-        } catch (err) {
-          console.error('Error entering fullscreen:', err)
-        }
-      }
-      
-      emit('fullscreen-change', !props.isFullscreen)
-    }
-
-    // Zoom Controls
+    // Navigation controls
     const zoomIn = () => {
       if (zoom.value < maxZoom) {
         zoom.value = Math.min(zoom.value * 1.2, maxZoom)
@@ -281,31 +408,21 @@ export default {
       }
     }
 
+    const resetZoom = () => {
+      zoom.value = defaultZoom
+      centerTree()
+    }
+
     const handleZoom = (e) => {
       e.preventDefault()
-      if (!container.value) return
-
-      const rect = container.value.getBoundingClientRect()
-      const mouseX = e.clientX - rect.left
-      const mouseY = e.clientY - rect.top
-
-      const oldZoom = zoom.value
-      if (e.deltaY < 0) {
-        zoomIn()
-      } else {
-        zoomOut()
-      }
-
-      if (oldZoom !== zoom.value) {
-        const scale = zoom.value / oldZoom
-        position.value = {
-          x: mouseX - (mouseX - position.value.x) * scale,
-          y: mouseY - (mouseY - position.value.y) * scale
-        }
+      const delta = e.deltaY > 0 ? 0.9 : 1.1
+      const newZoom = zoom.value * delta
+      if (newZoom >= minZoom && newZoom <= maxZoom) {
+        zoom.value = newZoom
       }
     }
 
-    // Pan Controls
+    // Pan controls
     const startPan = (e) => {
       if (e.button !== 0) return
       isPanning.value = true
@@ -325,18 +442,11 @@ export default {
 
     const stopPan = () => {
       isPanning.value = false
-      lastPosition.value = { ...position.value }
     }
 
-    // Touch Controls
+    // Touch controls
     const handleTouchStart = (e) => {
-      if (e.touches.length === 2) {
-        touchStartDistance.value = Math.hypot(
-          e.touches[0].clientX - e.touches[1].clientX,
-          e.touches[0].clientY - e.touches[1].clientY
-        )
-        initialZoom.value = zoom.value
-      } else if (e.touches.length === 1) {
+      if (e.touches.length === 1) {
         startPan({
           clientX: e.touches[0].clientX,
           clientY: e.touches[0].clientY,
@@ -346,15 +456,7 @@ export default {
     }
 
     const handleTouchMove = (e) => {
-      e.preventDefault()
-      if (e.touches.length === 2) {
-        const distance = Math.hypot(
-          e.touches[0].clientX - e.touches[1].clientX,
-          e.touches[0].clientY - e.touches[1].clientY
-        )
-        const scale = distance / touchStartDistance.value
-        zoom.value = Math.min(Math.max(initialZoom.value * scale, minZoom), maxZoom)
-      } else if (e.touches.length === 1) {
+      if (e.touches.length === 1) {
         pan({
           clientX: e.touches[0].clientX,
           clientY: e.touches[0].clientY
@@ -362,52 +464,60 @@ export default {
       }
     }
 
-    // Lifecycle Hooks
+    // Utility functions
+    const isNodeAvailable = (node) => {
+      if (!node.dependencies) return true
+      return node.dependencies.every(depId => {
+        const depSkill = skillNodes.value.find(n => n.id === depId)
+        return depSkill && depSkill.unlocked
+      })
+    }
+
+    const isRequirementMet = (nodeId) => {
+      const node = skillNodes.value.find(n => n.id === nodeId)
+      return node && node.unlocked
+    }
+
+    const getNodeName = (nodeId) => {
+      const node = skillNodes.value.find(n => n.id === nodeId)
+      return node ? node.name : nodeId
+    }
+
+    // Fullscreen controls
+    const toggleFullscreen = () => {
+      emit('fullscreen-change', !props.isFullscreen)
+    }
+
+    // Lifecycle hooks
     onMounted(() => {
       initializeNodes()
       window.addEventListener('resize', centerTree)
-      
-      // Add fullscreenchange event listener
-      document.addEventListener('fullscreenchange', () => {
-        if (!document.fullscreenElement && props.isFullscreen) {
-          emit('fullscreen-change', false)
-          document.body.style.overflow = ''
-          
-          setTimeout(() => {
-            centerTree()
-            zoom.value = 1
-          }, 100)
-        }
-      })
     })
 
     onUnmounted(() => {
       window.removeEventListener('resize', centerTree)
-      document.removeEventListener('fullscreenchange', null)
-      
-      if (document.fullscreenElement) {
-        document.exitFullscreen()
-          .catch(err => console.error('Error exiting fullscreen:', err))
-      }
-      document.body.style.overflow = ''
     })
 
     return {
+      container,
       width,
       height,
-      skillNodes,
-      connections,
       zoom,
       position,
       isPanning,
-      container,
-      isNodeAvailable,
-      getNodeName,
+      skillNodes,
+      connections,
+      unlockedCount,
+      totalSkills,
       handleNodeClick,
       handleNodeHover,
-      toggleFullscreen,
+      isNodeAvailable,
+      isRequirementMet,
+      getNodeName,
+      generatePath,
       zoomIn,
       zoomOut,
+      resetZoom,
       handleZoom,
       startPan,
       pan,
@@ -415,489 +525,349 @@ export default {
       handleTouchStart,
       handleTouchMove,
       handleTouchEnd: stopPan,
-      centerTree
+      isImageIcon,
+      toggleFullscreen
     }
   }
 }
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
 .skill-tree-wrapper {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  background: radial-gradient(circle at center, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.95) 100%);
-  border-radius: 12px;
-  overflow: hidden;
+position: relative;
+width: 100%;
+height: 100%;
+min-height: 800px;
+background: #1a1f2e;
+border-radius: 12px;
+overflow: hidden;
 
-  &.fullscreen {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    z-index: 999999;
-    border-radius: 0;
-    margin: 0;
-    padding: 0;
-
-    .fullscreen-btn {
-      background: rgba(255, 255, 255, 0.1);
-      border-color: rgba(255, 255, 255, 0.3);
-
-      &:hover {
-        background: rgba(255, 255, 255, 0.2);
-        border-color: rgba(255, 255, 255, 0.5);
-      }
-    }
-    .skill-tree-container {
-      width: 100vw;
-      height: 100vh;
-    }
-
-    .navigation-controls {
-      top: 2rem;
-      right: 2rem;
-    }
-  }
+&.fullscreen {
+position: fixed;
+top: 0;
+left: 0;
+width: 100vw;
+height: 100vh;
+z-index: 999999;
+border-radius: 0;
 }
-
-.skill-tree-container {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  cursor: grab;
-  
-  &:active {
-    cursor: grabbing;
-  }
-}
-
-.skill-tree {
-  transform-origin: center;
-  width: 100%;
-  height: 100%;
-  position: relative;
-}
-
-.grid-pattern {
-  position: absolute;
-  inset: 0;
-  background-image: 
-    linear-gradient(45deg, rgba(255, 215, 0, 0.03) 1px, transparent 1px),
-    linear-gradient(-45deg, rgba(255, 215, 0, 0.03) 1px, transparent 1px);
-  background-size: 30px 30px;
-  pointer-events: none;
-  z-index: -1;
-}
-
-.connections-layer {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-}
-
-.skill-connection {
-  stroke: rgba(255, 215, 0, 0.2);
-  stroke-width: 2;
-  transition: all 0.3s ease;
-  filter: url(#glow);
-
-  &.connection-active {
-    stroke: #ffd700;
-    stroke-width: 3;
-  }
-}
-
-.skill-node {
-  position: absolute;
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: rgba(20, 30, 40, 0.9);
-  border: 2px solid rgba(255, 215, 0, 0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  transform: translate(-50%, -50%);
-
-  .node-ring {
-    position: absolute;
-    inset: -4px;
-    border-radius: 50%;
-    border: 2px solid transparent;
-    transition: all 0.3s ease;
-    pointer-events: none;
-  }
-
-  &::before {
-    content: '';
-    position: absolute;
-    inset: 5px;
-    border: 1px solid rgba(255, 215, 0, 0.2);
-    border-radius: 50%;
-    transform: rotate(45deg);
-  }
-
-  &.unlocked {
-    background: rgba(255, 215, 0, 0.9);
-    border-color: #fff;
-    box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
-
-    .node-icon {
-      filter: brightness(0.8) contrast(1.2);
-    }
-
-    .node-ring {
-      border-color: rgba(255, 215, 0, 0.8);
-      transform: scale(1.1) rotate(45deg);
-    }
-  }
-
-  &.available {
-    border-color: rgba(255, 215, 0, 0.8);
-    animation: pulse 2s infinite;
-
-    .node-ring {
-      border-color: rgba(255, 215, 0, 0.4);
-      animation: rotate 4s linear infinite;
-    }
-  }
-
-  &.unavailable {
-    opacity: 0.6;
-    cursor: not-allowed;
-
-    .node-ring {
-      border-color: rgba(255, 0, 0, 0.3);
-    }
-  }
-
-  &.hovered {
-    transform: translate(-50%, -50%) scale(1.1);
-
-    .skill-tooltip {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    .node-ring {
-      transform: scale(1.2) rotate(45deg);
-    }
-  }
-
-  .node-icon {
-    font-size: 24px;
-    z-index: 1;
-    transition: filter 0.3s ease;
-  }
-}
-
-.skill-tooltip {
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%) translateY(10px);
-  background: rgba(0, 0, 0, 0.95);
-  border: 1px solid #ffd700;
-  padding: 1rem;
-  border-radius: 4px;
-  width: 200px;
-  color: #fff;
-  opacity: 0;
-  transition: all 0.3s ease;
-  pointer-events: none;
-  z-index: 100;
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: -6px;
-    left: 50%;
-    transform: translateX(-50%) rotate(45deg);
-    width: 12px;
-    height: 12px;
-    background: inherit;
-    border-left: 1px solid #ffd700;
-    border-top: 1px solid #ffd700;
-  }
-
-  h3 {
-    color: #ffd700;
-    margin-bottom: 0.5rem;
-    font-size: 1.1rem;
-    border-bottom: 1px solid rgba(255, 215, 0, 0.3);
-    padding-bottom: 0.5rem;
-  }
-
-  p {
-    font-size: 0.9rem;
-    margin-bottom: 0.5rem;
-    line-height: 1.4;
-  }
-
-  .skill-requirements {
-    font-size: 0.8rem;
-    margin-top: 0.5rem;
-    padding-top: 0.5rem;
-    border-top: 1px solid rgba(255, 215, 0, 0.3);
-
-    span {
-      color: #ffd700;
-      font-weight: 500;
-    }
-
-    ul {
-      margin: 0.25rem 0 0 1rem;
-      padding: 0;
-      list-style-type: none;
-
-      li {
-        position: relative;
-        padding-left: 1rem;
-        
-        &::before {
-          content: '•';
-          position: absolute;
-          left: 0;
-          color: rgba(255, 215, 0, 0.5);
-        }
-      }
-    }
-  }
-
-  .skill-cost {
-    font-size: 0.9rem;
-    color: #ffd700;
-    margin-top: 0.5rem;
-    font-weight: 500;
-  }
 }
 
 .navigation-controls {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  display: flex;
-  gap: 0.5rem;
-  z-index: 10;
-}
+position: absolute;
+top: 1rem;
+right: 1rem;
+display: flex;
+gap: 0.5rem;
+z-index: 10;
 
 .control-btn {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.8);
-  border: 1px solid rgba(255, 215, 0, 0.3);
-  color: #ffd700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
+background: rgba(255, 255, 255, 0.1) !important;
+border: 1px solid rgba(255, 255, 255, 0.2);
+
+&:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.v-icon {
+  color: white !important;
+}
+}
+}
+
+.skill-tree-container {
+width: 100%;
+height: 100%;
+overflow: hidden;
+cursor: grab;
+
+&:active {
+cursor: grabbing;
+}
+}
+
+.skill-tree-content {
+position: relative;
+transform-origin: center;
+}
+
+.connections-layer {
+position: absolute;
+top: 0;
+left: 0;
+pointer-events: none;
+}
+
+.skill-connection {
+fill: none;
+stroke-width: 2;
+transition: all 0.3s ease;
+
+&.connection-active {
+stroke: url(#activeConnection);
+filter: url(#glow);
+}
+
+&.connection-available {
+stroke: rgba(255, 215, 0, 0.3);
+stroke-dasharray: 6 4;
+}
+
+&.connection-locked {
+stroke: rgba(255, 255, 255, 0.1);
+}
+}
+
+.skill-node {
+position: absolute;
+width: 60px;
+height: 60px;
+transform: translate(-50%, -50%);
+cursor: pointer;
+z-index: 1;
+
+.node-content {
+width: 100%;
+height: 100%;
+border-radius: 50%;
+background: rgba(30, 35, 45, 0.95);
+border: 2px solid rgba(255, 255, 255, 0.2);
+display: flex;
+align-items: center;
+justify-content: center;
+transition: all 0.3s ease;
+position: relative;
+overflow: visible;
+
+.node-icon {
+  font-size: 24px;
+  opacity: 0.7;
   transition: all 0.3s ease;
-  font-size: 1.2rem;
-
-  &:hover {
-    background: rgba(255, 215, 0, 0.2);
-    border-color: #ffd700;
-    transform: scale(1.1);
-  }
-
-  &:active {
-    transform: scale(0.95);
-  }
-  &.fullscreen-btn {
-    span {
-      transition: transform 0.3s ease;
-    }
-
-    &:hover span {
-      transform: scale(1.1);
-    }
-  }
+}
 }
 
-.skill-points-display {
+.connection-points {
+position: absolute;
+inset: 0;
+pointer-events: none;
+
+.connection-point {
   position: absolute;
-  bottom: 2rem;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.9);
-  border: 1px solid #ffd700;
-  padding: 1rem;
-  border-radius: 4px;
-  color: #fff;
-  z-index: 10;
-  min-width: 200px;
-  text-align: center;
-
-  .points-container {
-    margin-bottom: 0.5rem;
-    font-size: 1.1rem;
-
-    .points-value {
-      color: #ffd700;
-      font-weight: 500;
-      margin: 0 0.25rem;
-    }
-
-    .points-max {
-      opacity: 0.7;
-    }
-  }
-
-  .points-progress {
-    height: 4px;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 2px;
-    overflow: hidden;
-  }
-
-  .progress-bar {
-    height: 100%;
-    background: #ffd700;
-    transition: width 0.3s ease;
-    box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
-  }
-}
-
-.close-fullscreen {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  width: 40px;
-  height: 40px;
+  width: 6px;
+  height: 6px;
+  background: rgba(255, 215, 0, 0.5);
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.8);
-  border: 1px solid rgba(255, 215, 0, 0.3);
-  color: #ffd700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
   transition: all 0.3s ease;
-  z-index: 10000;
-  font-size: 1.2rem;
 
+  &.top { top: 0; left: 50%; transform: translate(-50%, -50%); }
+  &.right { right: 0; top: 50%; transform: translate(50%, -50%); }
+  &.bottom { bottom: 0; left: 50%; transform: translate(-50%, 50%); }
+  &.left { left: 0; top: 50%; transform: translate(-50%, -50%); }
+}
+}
+
+&.root {
+.node-content {
+  border-color: #ffd700;
+  background: rgba(255, 215, 0, 0.15);
+
+  .node-icon {
+    opacity: 1;
+    color: #ffd700;
+  }
+}
+}
+
+&.unlocked {
+.node-content {
+  background: rgba(255, 215, 0, 0.15);
+  border-color: #ffd700;
+
+  .node-icon {
+    opacity: 1;
+    color: #ffd700;
+  }
+}
+
+.connection-point {
+  background: #ffd700;
+}
+}
+
+&.available {
+.node-content {
+  border-color: rgba(255, 215, 0, 0.5);
+  
   &:hover {
-    background: rgba(255, 215, 0, 0.2);
-    border-color: #ffd700;
     transform: scale(1.1);
-  }
-
-  &:active {
-    transform: scale(0.95);
+    border-color: #ffd700;
   }
 }
 
-@keyframes pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.4);
-  }
-  70% {
-    box-shadow: 0 0 0 10px rgba(255, 215, 0, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(255, 215, 0, 0);
-  }
+.node-icon {
+  opacity: 0.9;
+}
 }
 
-@keyframes rotate {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+&.locked {
+cursor: not-allowed;
+
+.node-content {
+  background: rgba(30, 35, 45, 0.5);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
-// Responsive styles
+.node-icon {
+  opacity: 0.4;
+}
+}
+}
+
+.skill-tooltip {
+position: absolute;
+top: 100%;
+left: 50%;
+transform: translateX(-50%) translateY(10px);
+background: rgba(20, 25, 35, 0.95);
+border: 1px solid rgba(255, 255, 255, 0.2);
+padding: 1rem;
+border-radius: 8px;
+min-width: 250px;
+color: #fff;
+pointer-events: none;
+z-index: 100;
+box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+
+.skill-icon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
+.tooltip-header {
+display: flex;
+justify-content: space-between;
+align-items: center;
+margin-bottom: 0.5rem;
+
+h3 {
+  color: #ffd700;
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.cost-badge {
+  background: rgba(255, 215, 0, 0.2);
+  color: #ffd700;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+}
+}
+
+&.tooltip-left {
+left: auto;
+right: calc(100% + 10px);
+top: 50%;
+transform: translateY(-50%);
+}
+
+&.tooltip-right {
+left: calc(100% + 10px);
+top: 50%;
+transform: translateY(-50%);
+}
+}
+
+.points-display {
+position: absolute;
+bottom: 2rem;
+left: 50%;
+transform: translateX(-50%);
+background: rgba(20, 25, 35, 0.95);
+border: 1px solid rgba(255, 255, 255, 0.2);
+padding: 1rem;
+border-radius: 8px;
+color: #fff;
+min-width: 250px;
+text-align: center;
+
+.points-info {
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 0.5rem;
+margin-bottom: 0.5rem;
+
+.points-value {
+  color: #ffd700;
+  font-weight: 500;
+}
+
+.points-separator {
+  opacity: 0.5;
+}
+}
+
+.points-bar {
+height: 4px;
+background: rgba(255, 255, 255, 0.1);
+border-radius: 2px;
+overflow: hidden;
+margin-bottom: 0.5rem;
+}
+
+.points-progress {
+height: 100%;
+background: #ffd700;
+transition: width 0.3s ease;
+}
+
+.points-stats {
+font-size: 0.9rem;
+opacity: 0.8;
+}
+}
+
 @media (max-width: 768px) {
-  .skill-node {
-    width: 50px;
-    height: 50px;
+.skill-node {
+width: 50px;
+height: 50px;
 
-    .node-icon {
-      font-size: 20px;
-    }
-  }
+.node-icon {
+  font-size: 20px;
+}
+}
 
-  .navigation-controls {
-    top: 0.5rem;
-    right: 0.5rem;
-  }
+.skill-tooltip {
+min-width: 200px;
 
-  .control-btn,
-  .close-fullscreen {
-    width: 36px;
-    height: 36px;
-    font-size: 1rem;
-  }
+h3 {
+  font-size: 1rem;
+}
+}
 
-  .skill-tooltip {
-    width: 180px;
-    padding: 0.75rem;
-
-    h3 {
-      font-size: 1rem;
-    }
-
-    p {
-      font-size: 0.8rem;
-    }
-  }
-
-  .skill-points-display {
-    min-width: 180px;
-    padding: 0.75rem;
-
-    .points-container {
-      font-size: 1rem;
-    }
-  }
+.points-display {
+min-width: 200px;
+padding: 0.75rem;
+}
 }
 
 @media (max-width: 480px) {
-  .skill-node {
-    width: 40px;
-    height: 40px;
+.skill-node {
+width: 40px;
+height: 40px;
 
-    .node-icon {
-      font-size: 16px;
-    }
-  }
+.node-icon {
+  font-size: 16px;
+}
+}
 
-  .control-btn,
-  .close-fullscreen {
-    width: 32px;
-    height: 32px;
-  }
-
-  .skill-points-display {
-    min-width: 160px;
-    padding: 0.75rem;
-
-    .points-container {
-      font-size: 0.9rem;
-    }
-  }
-
-  .skill-tooltip {
-    width: 160px;
-    padding: 0.75rem;
-
-    h3 {
-      font-size: 0.9rem;
-    }
-
-    p {
-      font-size: 0.75rem;
-    }
-  }
+.points-display {
+min-width: 180px;
+padding: 0.5rem;
+}
 }
 </style>

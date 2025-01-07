@@ -18,7 +18,7 @@ export const useExperienceStore = defineStore('experience', {
           'Code Reviews: Participated in peer reviews and applied feedback to improve code quality.',
           'Application Deployment: Supported deployment processes in development and staging environments.'
         ],
-        technologies: ['Vue.js', 'Python', 'HTML', 'CSS', 'JavaScript', 'Git']
+        technologies: ['Vue.js', 'Python', 'HTML', 'CSS', 'JavaScript', 'Git', 'FastAPI', 'Postgresql', 'Docker']
       },
       {
         position: 'Data Scientist & Full Stack Developer',
@@ -35,7 +35,7 @@ export const useExperienceStore = defineStore('experience', {
           'Participated in Model Training: Prepared data and trained models for checkbox and signature detection.',
           'Developed new techniques for extracting table content to enhance chunking process in RAG systems.'
         ],
-        technologies: ['Python', 'Vue.js', 'LLMs', 'RAG', 'Machine Learning', 'OCR', 'Computer Vision'],
+        technologies: ['Python', 'Vue.js', 'LLMs', 'RAG', 'Machine Learning', 'OCR', 'Computer Vision', 'RAG Debbuging', 'R&D', 'HTML', 'CSS', 'JavaScript', 'Git', 'FastAPI', 'Postgresql'],
         links: {
           github: ['https://github.com/recitalAI/ragtime', 'https://github.com/recitalAI/ragtime-package']
         }
@@ -52,7 +52,7 @@ export const useExperienceStore = defineStore('experience', {
           'Trained models for action recognition using LSTM and Logistic regression.',
           'Improved 3D detection models for capturing and identifying joints and individuals.'
         ],
-        technologies: ['Python', 'LSTM', 'Machine Learning', 'Computer Vision', '3D Detection', 'Data Processing']
+        technologies: ['Python', 'LSTM', 'Machine Learning', 'Computer Vision', '3D Detection', 'Data Processing', 'Data collection']
       },
       {
         position: 'Data Analyst',

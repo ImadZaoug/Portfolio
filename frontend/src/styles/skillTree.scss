@@ -1,0 +1,83 @@
+// frontend/src/styles/skillTree.scss
+
+.skill-tree-container {
+    background: radial-gradient(circle at center, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.95) 100%);
+    min-height: 800px;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .skill-connection {
+    stroke: rgba(255, 215, 0, 0.2);
+    stroke-width: 2;
+    transition: all 0.3s ease;
+    
+    &.connection-active {
+      stroke: #ffd700;
+      stroke-width: 3;
+      filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.5));
+    }
+  }
+  
+  .skill-node {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(20, 30, 40, 0.9);
+    border: 2px solid rgba(255, 215, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    transform: translate(-50%, -50%);
+  
+    &.unlocked {
+      background: rgba(255, 215, 0, 0.9);
+      border-color: #fff;
+      box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+    }
+  
+    &.available {
+      border-color: rgba(255, 215, 0, 0.8);
+      animation: pulse 2s infinite;
+    }
+  
+    &.left-branch {
+      transform-origin: right center;
+    }
+  
+    &.right-branch {
+      transform-origin: left center;
+    }
+  }
+  
+  .skill-tooltip {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.95);
+    border: 1px solid #ffd700;
+    padding: 1rem;
+    border-radius: 4px;
+    color: #fff;
+    z-index: 100;
+    min-width: 200px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  
+    &.visible {
+      opacity: 1;
+    }
+  
+    h3 {
+      color: #ffd700;
+      margin-bottom: 0.5rem;
+    }
+  }
+  
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(255, 215, 0, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }
+  }

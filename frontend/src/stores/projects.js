@@ -76,7 +76,7 @@ export const useProjectsStore = defineStore('projects', {
           fullDesc: "Revolutionized the recruitment process by developing an AI-powered model that autonomously generates tailored interview questions, conducts interviews using video analysis, and delivers individualized scores. Leveraged Llamaindex as a RAG system and large language models (LLM) to streamline candidate evaluation, significantly reducing time and costs for the company.",
           status: "In Progress",
           context: "Start-up idea",
-          technologies: ["AI/ML", "LLamaIndex", "LLM", "Python", "Computer Vision"]
+          technologies: ["AI/ML", "RAG", "LLM", "Python", "Computer Vision"]
         },
         {
           id: 8,
@@ -85,7 +85,7 @@ export const useProjectsStore = defineStore('projects', {
           shortDesc: "Highway camera image enhancement",
           fullDesc: "Create a software application designed for deblurring images captured by highway cameras, particularly those focused on license plate recognition. This program incorporates an error correction function to mitigate the blurring effects and enhance image clarity.",
           context: "School project",
-          technologies: ["Computer Vision", "Image Processing", "Python"]
+          technologies: ["Computer Vision", "Image Processing", "Python", "Algorithms", "R&D"]
         },
         {
           id: 9,
