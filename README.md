@@ -189,6 +189,8 @@ colors: {
 
 ## 🤝 Contributing
 
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our game mode development plans, contribution process, and coding guidelines.
+
 1. Fork the repository
 2. Create your feature branch
 3. Commit your changes
