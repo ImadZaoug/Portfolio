@@ -2,7 +2,6 @@
 <template>
   <div class="avatar-container">
     <canvas ref="canvas" />
-    <div v-if="!loaded" class="loading">Loading avatar...</div>
   </div>
 </template>
 
