@@ -1,4 +1,3 @@
-# frontend/src/components/PersonalProfile.vue
 <template>
   <v-card class="profile-card" elevation="4">
     <v-container class="fill-height pa-0">
@@ -22,7 +21,7 @@
             elevation="2"
           >
             <div class="d-flex align-center">
-              <v-icon icon="mdi-linkedin" size="24" class="mr-2" color="white" />
+              <v-icon icon="mdi-linkedin" size="24" class="mr-2 force-white" color="white" />
               <span class="white--text force-white">LinkedIn Profile</span>
             </div>
           </v-btn>
@@ -30,11 +29,11 @@
             href="https://github.com/ImadZaoug"
             target="_blank"
             class="social-btn"
-            :color="'#24292E'"
+            :color="isDark ? '#333333' : '#24292E'"
             elevation="2"
           >
             <div class="d-flex align-center">
-              <v-icon icon="mdi-github" size="24" class="mr-2" color="white" />
+              <v-icon icon="mdi-github" size="24" class="mr-2 force-white" color="white" />
               <span class="white--text force-white">Github Profile</span>
             </div>
           </v-btn>
@@ -75,7 +74,7 @@
           elevation="3"
         >
           <v-icon icon="mdi-account-details" class="mr-2 force-white" color="white" />
-          <span class="force-white">View Full Profile</span>
+          <span class="force-white">Uncover More</span>
         </v-btn>
       </div>
     </v-container>
@@ -83,8 +82,9 @@
 </template>
 
 <script>
-import { defineComponent } from 'vue'
+import { defineComponent, computed } from 'vue'
 import { useProfileStore } from '@/stores/profile'
+import { useTheme } from 'vuetify'
 
 export default defineComponent({
   name: 'PersonalProfile',
@@ -93,12 +93,19 @@ export default defineComponent({
   
   setup(props, { emit }) {
     const profileStore = useProfileStore()
+    const theme = useTheme()
+    
+    const isDark = computed(() => theme.global.current.value.dark)
     
     const handleExpand = () => {
       emit('expand', true)
     }
     
-    return { profileStore, handleExpand }
+    return { 
+      profileStore, 
+      handleExpand,
+      isDark
+    }
   }
 })
 </script>

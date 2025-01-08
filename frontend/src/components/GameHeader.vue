@@ -1,4 +1,3 @@
-# frontend/src/components/GameHeader.vue
 <template>
   <v-app-bar class="game-header px-4" flat>
     <div class="d-flex align-center justify-space-between w-100">
@@ -36,19 +35,32 @@
 
       <!-- Center - Main Navigation -->
       <div class="d-flex align-center nav-group">
-        <v-btn
+        <div
           v-for="(item, index) in menuItems"
           :key="index"
-          class="mx-2 nav-btn glass-effect"
-          :disabled="item.disabled"
-          @click="handleNavClick(item.value)"
+          class="nav-btn-wrapper"
         >
-          <div class="btn-content">
-            <v-icon start class="nav-icon">{{ item.icon }}</v-icon>
-            <span class="nav-text">{{ item.title }}</span>
-          </div>
-          <div class="btn-glow"></div>
-        </v-btn>
+          <v-btn
+            class="mx-2 nav-btn glass-effect"
+            :disabled="item.disabled"
+            @click="handleNavClick(item.value)"
+          >
+            <div class="btn-content">
+              <v-icon start class="nav-icon">{{ item.icon }}</v-icon>
+              <span class="nav-text">{{ item.title }}</span>
+            </div>
+            <div class="btn-glow"></div>
+          </v-btn>
+          <v-tooltip
+            v-if="item.disabled"
+            :key="'tooltip-' + index"
+            activator="parent"
+            location="bottom"
+            :open-delay="200"
+          >
+            Coming Soon
+          </v-tooltip>
+        </div>
       </div>
 
       <!-- Right side - Inventory -->
@@ -306,19 +318,30 @@ export default defineComponent({
   }
 }
 
+.nav-btn-wrapper {
+  position: relative;
+  cursor: pointer;
+
+  &:hover {
+    .nav-btn {
+      transform: translateY(-2px);
+    }
+  }
+}
+
 .nav-btn {
   position: relative;
   min-width: 120px;
   height: 48px;
   padding: 0 20px;
-  overflow: hidden;
   opacity: 0.8;
+  transition: all 0.3s ease;
 
   &:disabled {
-    opacity: 0.8 !important;
+    opacity: 0.7 !important;
     background: rgba(255, 255, 255, 0.1) !important;
     border-color: rgba(255, 255, 255, 0.2) !important;
-    cursor: default;
+    cursor: not-allowed;
     pointer-events: none;
   }
   
@@ -358,12 +381,10 @@ export default defineComponent({
     transition: transform 0.5s ease;
     pointer-events: none;
   }
+}
 
-  &:not(:disabled):hover {
-    .btn-glow {
-      transform: translate(-50%, -50%) scale(1);
-    }
-  }
+.nav-btn-wrapper:hover .btn-glow {
+  transform: translate(-50%, -50%) scale(1);
 }
 
 .theme-btn, .inventory-btn, .cave-mode-btn {
@@ -450,7 +471,6 @@ export default defineComponent({
   }
 }
 
-/* Print styles */
 @media print {
   .cave-mode-btn {
     display: none !important;

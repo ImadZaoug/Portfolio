@@ -11,8 +11,8 @@
       <div class="solutions-grid-container">
         <!-- 3D Projects Section -->
         <div class="project-section">
-          <h2 class="section-title">Featured Projects</h2>
-          <p class="section-description">Advanced simulation and visualization projects</p>
+          <h2 class="section-title">Professional Projects</h2>
+          <p class="section-description">Professional projects in real use cases</p>
           
           <div class="solutions-grid">
             <div 
