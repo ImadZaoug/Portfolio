@@ -13,7 +13,7 @@ This project is an interactive portfolio built with Vue.js and Three.js, featuri
 
 1. Clone the repository:
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/ImadZaoug/Portfolio.git
 cd portfolio
 ```
 
